@@ -38,7 +38,11 @@ ENV_FILE="$APP_DIR/app/.env.local"
 if [ ! -f "$ENV_FILE" ]; then
   log "Creating $ENV_FILE (input is hidden for secrets)"
   read -rp  "Public URL [https://post.avonixai.com]: " BASE;          BASE="${BASE:-https://post.avonixai.com}"
-  read -rp  "Supabase URL [https://hmwxsdvhrloxlplfahhk.supabase.co]: " SBURL; SBURL="${SBURL:-https://hmwxsdvhrloxlplfahhk.supabase.co}"
+  # No default: a wrong project address fails later, far from here, as a TLS or DNS error.
+  read -rp  "Supabase Project URL (Supabase → Project Settings → API), e.g. https://abcdefghijklmnopqrst.supabase.co: " SBURL
+  SBURL="${SBURL%/}"
+  [[ "$SBURL" =~ ^https://[a-z0-9]+\.supabase\.co$ ]] || die "That is not a Supabase project URL: '$SBURL'"
+  getent hosts "${SBURL#https://}" >/dev/null || die "${SBURL#https://} does not exist in DNS — copy the Project URL again from Supabase."
   read -rsp "Supabase service_role key: " SBKEY; echo
   read -rsp "OpenRouter API key (Enter to skip): " ORKEY; echo
   read -rsp "Dashboard password (choose a strong one): " PW; echo
