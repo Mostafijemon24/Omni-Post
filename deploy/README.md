@@ -39,7 +39,8 @@ GitHub → repository → **Settings → Secrets and variables → Actions → N
 | `VPS_KNOWN_HOSTS` | the `ssh-keyscan` line(s) from step 2 |
 | `VPS_PORT` | only if SSH is not on port 22 |
 
-Optional **variable** (same page, Variables tab): `APP_DIR` if you didn't use `/var/www/omnipost`.
+Optional **variables** (same page, Variables tab): `APP_DIR` if the app isn't in `/var/www/omnipost`
+(e.g. `/opt/omnipost`), and `APP_PORT` if nginx proxies to a port other than 3000 (e.g. `3080`).
 
 The deploy job runs in a GitHub environment called `production`; you can add a required reviewer there
 if you want to approve each deploy.

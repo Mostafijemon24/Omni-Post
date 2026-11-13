@@ -38,6 +38,13 @@ log "Building"
 npm run build
 
 log "Starting under pm2 ($PM2_NAME, port $PORT)"
+# A pm2 app with this name may already exist from an older install in another folder.
+# Only reload it when it runs from this checkout; otherwise replace it (the old folder is left untouched).
+CURRENT_CWD="$(pm2 jlist 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const a=JSON.parse(d).find(p=>p.name===process.argv[1]);process.stdout.write(a?a.pm2_env.pm_cwd||"":"")}catch{}})' "$PM2_NAME")"
+if [ -n "$CURRENT_CWD" ] && [ "$(realpath -m "$CURRENT_CWD")" != "$(realpath -m "$APP_DIR/app")" ]; then
+  echo "  pm2 app '$PM2_NAME' runs from $CURRENT_CWD — replacing it with $APP_DIR/app (old folder kept)"
+  pm2 delete "$PM2_NAME" >/dev/null
+fi
 if pm2 describe "$PM2_NAME" >/dev/null 2>&1; then
   pm2 reload "$PM2_NAME" --update-env
 else
