@@ -29,8 +29,16 @@ variables are present; without them the app stays in the open, mock-only prototy
 | `OMNIPOST_ADMIN_PASSWORD`, `OMNIPOST_SECRET` (≥ 32 chars) | Dashboard login, and OAuth consent for MCP clients |
 | `PUBLIC_BASE_URL` | Absolute URLs in OAuth metadata, e.g. `https://post.avonixai.com` |
 
-**Database.** Run [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) once in
-Supabase → SQL Editor. RLS is on with no policies, so only the server (service-role key) can read or write.
+**Database.** Run [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) and then
+[`002_api_tokens_and_publishing.sql`](supabase/migrations/002_api_tokens_and_publishing.sql) in Supabase → SQL Editor
+(both are safe to run again). RLS is on with no policies, and the files grant the tables to `service_role` only,
+so only the server can read or write. Supabase does not expose new tables to its Data API on its own any more:
+without those grants every database call fails with "permission denied".
+
+**Is it working?** `GET /api/v1/health` (public, no secrets) answers `{"ok":true,…}` when the database and
+login are usable, and otherwise says what to fix: tables missing, access not granted, wrong key, Supabase
+unreachable. The dashboard shows the same message in a red bar, and an MCP client that cannot be added gets it
+in the OAuth error.
 
 **MCP endpoint.** `POST {PUBLIC_BASE_URL}/mcp`, Streamable HTTP with JSON responses, stateless.
 Clients sign in with OAuth 2.1 (dynamic client registration, PKCE S256, refresh-token rotation);

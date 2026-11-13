@@ -56,6 +56,12 @@ log "Health check"
 for i in $(seq 1 20); do
   if curl -fsS "http://127.0.0.1:$PORT/api/v1/openapi.json" >/dev/null 2>&1; then
     echo "  OK — http://127.0.0.1:$PORT is serving"
+    # The app is up; say so loudly if its database or login is not usable (MCP connectors fail without them).
+    HEALTH="$(curl -sS -m 20 "http://127.0.0.1:$PORT/api/v1/health" 2>/dev/null || true)"
+    case "$HEALTH" in
+      '{"ok":true'*) echo "  Backend healthy (database and login configured)" ;;
+      *) printf '\n\033[1;33m⚠ Backend needs attention:\033[0m %s\n' "$HEALTH" ;;
+    esac
     exit 0
   fi
   sleep 2

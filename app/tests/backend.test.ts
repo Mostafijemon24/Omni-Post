@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { b64url, sha256 } from "@/lib/server/crypto";
-import { MemoryDb, setDb, SupabaseDb } from "@/lib/server/db";
+import { checkDb, classifyDbError, DbError, isPublicKey, MemoryDb, setDb, SupabaseDb } from "@/lib/server/db";
 import { handleRpc } from "@/lib/server/mcp";
 import { exchangeToken, issueCode, registerClient, validateAuthRequest, verifyAccessToken } from "@/lib/server/oauth";
 import { buildPrompt, parseVariations } from "@/lib/server/openrouter";
@@ -135,5 +135,48 @@ describe("SupabaseDb", () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://x.supabase.co/rest/v1/posts?select=*&status=eq.draft&order=created_at.desc&limit=5");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer svc");
+  });
+
+  it("explains why Supabase refused a call", async () => {
+    expect(classifyDbError(403, '{"code":"42501","message":"permission denied for table oauth_clients"}')).toBe("permission_denied");
+    expect(classifyDbError(404, '{"code":"PGRST205","message":"Could not find the table"}')).toBe("tables_missing");
+    expect(classifyDbError(401, '{"message":"Invalid API key"}')).toBe("key_rejected");
+    expect(classifyDbError(500, "oops")).toBe("error");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response('{"code":"42501","message":"permission denied for table posts"}', { status: 403 })));
+    await expect(new SupabaseDb("https://x.supabase.co", "svc").select("posts")).rejects.toMatchObject({ problem: "permission_denied" });
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("fetch failed"); }));
+    await expect(new SupabaseDb("https://x.supabase.co", "svc").select("posts")).rejects.toMatchObject({ problem: "unreachable" });
+  });
+
+  it("recognises the public key", () => {
+    const jwt = (role: string) => `h.${btoa(JSON.stringify({ role })).replace(/=+$/, "")}.s`;
+    expect(isPublicKey(jwt("anon"))).toBe(true);
+    expect(isPublicKey("sb_publishable_abc")).toBe(true);
+    expect(isPublicKey(jwt("service_role"))).toBe(false);
+    expect(isPublicKey("sb_secret_abc")).toBe(false);
+  });
+});
+
+describe("checkDb", () => {
+  const withEnv = () => { process.env.SUPABASE_URL = "https://x.supabase.co"; process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_abc"; };
+  afterEach(() => { delete process.env.SUPABASE_URL; delete process.env.SUPABASE_SERVICE_ROLE_KEY; });
+
+  it("is healthy when every table answers", async () => {
+    withEnv();
+    expect(await checkDb()).toMatchObject({ ok: true, problem: null });
+  });
+  it("names the tables the server may not read and how to fix it", async () => {
+    withEnv();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    db.select = async (table) => { if (table.startsWith("oauth_")) throw new DbError("denied", "permission_denied"); return []; };
+    const health = await checkDb();
+    expect(health).toMatchObject({ ok: false, problem: "permission_denied", tables: ["oauth_clients", "oauth_codes", "oauth_tokens"] });
+    expect(health.hint).toMatch(/001_init\.sql/);
+  });
+  it("reports missing configuration and a public key without calling Supabase", async () => {
+    expect((await checkDb()).problem).toBe("not_configured");
+    withEnv();
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_publishable_abc";
+    expect((await checkDb()).problem).toBe("key_rejected");
   });
 });

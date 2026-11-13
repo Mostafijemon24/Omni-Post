@@ -381,6 +381,7 @@ export class OmniPostLogic extends Store<OmniState> {
       rootClass: dark ? 'om-dark' : '',
       themeIcon: dark ? 'ph ph-sun' : 'ph ph-moon',
       navSections, r,
+      backendIssue: (this.state.backend && this.state.backend.dbIssue) || '',
       pageTitle:t[0], pageSub:t[1], pageTag:t[2],
       toggleTheme:()=>this.toggleTheme(),
       goStudio:this.go('studio'), goSettings:this.go('settings'), goLogs:this.go('logs'),
