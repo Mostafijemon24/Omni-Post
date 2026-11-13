@@ -2,7 +2,7 @@
 import React from "react";
 import { Store } from "./store";
 import { aiProviders as aiAdapters, DEFAULT_AI_PROVIDER, CAPTION_LIMITS } from "@/lib/adapters/mock";
-import { shortenToLimit, parseHashtags, formatSchedule, STUDIO_TONES, STUDIO_LANGUAGES, STUDIO_MODELS } from "./studio";
+import { shortenToLimit, parseHashtags, formatSchedule, STUDIO_TONES, STUDIO_LANGUAGES, STUDIO_MODELS, zonedToIso, isoToZoned } from "./studio";
 
 const ALL_PLATFORMS = ['facebook','instagram','linkedin','x','threads'];
 
@@ -212,7 +212,7 @@ export class OmniPostLogic extends Store<OmniState> {
     const routeFilter = { scheduled:'scheduled', published:'published', drafts:'draft' }[route];
     const srcList = ['Content Studio','n8n','MCP · Claude','Manual upload','CSV import','REST API','Content Studio','MCP · ChatGPT'];
     const srcIcon = x => x.startsWith('MCP')?'ph ph-plugs-connected':x==='n8n'?'ph ph-share-network':x.includes('import')?'ph ph-file-arrow-up':x==='REST API'?'ph ph-code':x==='Manual upload'?'ph ph-upload-simple':'ph ph-sparkle';
-    const studioRows = (this.state.studioPosts||[]).map(x => [x.title, x.excerpt, x.platforms, x.account, x.when, x.status, 'Content Studio']);
+    const studioRows = (this.state.studioPosts||[]).map(x => [x.title, x.excerpt, x.platforms, x.account, x.when, x.status, x.source || 'Content Studio']);
     const incomingPosts = studioRows.concat((this.state.incoming||[]).map(x => [x.title, x.excerpt, x.platforms, x.account, '—', 'draft', x.source+' (mock)']));
     const postRows = incomingPosts.concat(allPosts.map((p,i)=>p.concat([srcList[i]]))).filter(p => !routeFilter || p[5]===routeFilter).map(([title,excerpt,icons,account,when,st,source]) => {
       const sm = postStatusMap[st];
@@ -495,6 +495,28 @@ export class OmniPostLogic extends Store<OmniState> {
     return JSON.stringify({ name:names[kind], nodes:[t, second], connections:conn, settings:{ executionOrder:'v1' }, meta:{ templateCredsSetupCompleted:false } }, null, 2);
   }
 
+  /** Maps a row from /api/posts to the shape the Posts list and Calendar use. */
+  fromDbPost(p){
+    const tz = p.timezone || 'Asia/Dhaka';
+    const z = p.scheduled_at ? isoToZoned(p.scheduled_at, tz) : null;
+    const name = { facebook:'Facebook', instagram:'Instagram', linkedin:'LinkedIn', x:'X', threads:'Threads' }[p.platform] || p.platform;
+    return { id:p.id, title:p.title, excerpt:(p.caption||'').slice(0,60)+((p.caption||'').length>60?'…':''), platforms:[p.platform], account:p.account||'—',
+      when: z ? formatSchedule(z.date, z.time, tz).split(' · ').slice(0,2).join(' · ') : '—', status:p.status, date: z ? z.date : '', label:name, source:p.source };
+  }
+
+  /** Detects the real backend and loads stored posts. Silent no-op in prototype mode. */
+  async loadBackend(){
+    try {
+      const st = await fetch('/api/status', { cache:'no-store' });
+      if (!st.ok) return;
+      const backend = await st.json();
+      this.setState({ backend });
+      if (!backend.db) return;
+      const r = await fetch('/api/posts', { cache:'no-store' });
+      if (r.ok) this.setState({ studioPosts:(await r.json()).posts.map(p => this.fromDbPost(p)) });
+    } catch {}
+  }
+
   // ---- AI Content Studio: editable brief, per-platform variations, drafts and scheduling
   studioVals(varData){
     const s = this.state;
@@ -540,8 +562,26 @@ export class OmniPostLogic extends Store<OmniState> {
         .finally(()=>this.setState({ generating:false }));
     };
 
+    const be = s.backend || {};
+    const runAI = (label, platforms, apply) => {
+      if (s.generating) return;
+      const m = STUDIO_MODELS.find(x=>x.model===brief.model) || STUDIO_MODELS[0];
+      set({ generating:true });
+      fetch('/api/generate', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ topic:brief.topic, platforms, tone:brief.tone, language:brief.language, keyword:brief.keyword, model:m.openrouter }) })
+        .then(r => r.json().then(j => ({ ok:r.ok, j })))
+        .then(({ ok, j }) => {
+          if (!ok) return notify(label+' failed: '+(j.error||'unknown error'), 'warn');
+          const patch = {};
+          j.variations.forEach(x => { patch[x.platform] = Object.assign({}, (s.sVars||{})[x.platform], { headline:x.headline, caption:x.caption, tags:x.hashtags, cta:x.cta, alt:x.image_alt }); });
+          this.setState({ sVars:Object.assign({}, this.state.sVars, patch) });
+          if (apply) apply(j);
+          notify(label+' with '+j.model+'.');
+        })
+        .catch(() => notify(label+' failed: network error.', 'warn'))
+        .finally(()=>this.setState({ generating:false }));
+    };
     const kwTag = '#'+brief.keyword.replace(/[^\p{L}\p{N}]+/gu,'');
-    const generate = () => runMock('Variations refreshed for '+selected.length+' platform(s)', () => {
+    const generate = () => be.ai ? runAI('Generated '+selected.length+' variation(s)', selected) : runMock('Variations refreshed for '+selected.length+' platform(s)', () => {
       const patch = {};
       selected.forEach(p => { const cur = vars[p]; const tags = cur.tags.some(t=>t.toLowerCase()===kwTag.toLowerCase()) || kwTag==='#' ? cur.tags : [kwTag].concat(cur.tags);
         patch[p] = Object.assign({}, (s.sVars||{})[p], { headline: brief.topic, tags }); });
@@ -549,32 +589,41 @@ export class OmniPostLogic extends Store<OmniState> {
     });
 
     const rewriteActions = [
-      ['Regenerate','ph ph-arrows-clockwise', () => runMock('Regenerated '+av.name, () => setVar(ap, { headline:brief.topic }))],
+      ['Regenerate','ph ph-arrows-clockwise', () => be.ai ? runAI('Regenerated '+av.name, [ap]) : runMock('Regenerated '+av.name, () => setVar(ap, { headline:brief.topic }))],
       ['Shorten to fit','ph ph-arrows-in-line-horizontal', () => { const next = shortenToLimit(av.caption, overLimit ? limitNum : Math.max(40, Math.floor(chars*0.7)));
         setVar(ap, { caption:next }); notify('Caption shortened from '+chars+' to '+next.length+' characters.'); }],
-      ['Change tone','ph ph-sliders', () => { const i = STUDIO_TONES.indexOf(brief.tone); const tone = STUDIO_TONES[(i+1)%STUDIO_TONES.length]; setBrief({ tone }); runMock('Tone set to '+tone); }],
-      ['Translate','ph ph-translate', () => runMock('Translate to '+brief.language)],
+      ['Change tone','ph ph-sliders', () => { const i = STUDIO_TONES.indexOf(brief.tone); const tone = STUDIO_TONES[(i+1)%STUDIO_TONES.length]; setBrief({ tone }); be.ai ? notify('Tone set to '+tone+'. Press Regenerate to rewrite with it.') : runMock('Tone set to '+tone); }],
+      ['Translate','ph ph-translate', () => be.ai ? runAI('Rewritten in '+brief.language, [ap]) : runMock('Translate to '+brief.language)],
       [s.sEdit ? 'Done editing' : 'Edit','ph '+(s.sEdit?'ph-check':'ph-pencil-simple'), () => set({ sEdit:!s.sEdit })],
     ].map(([label,icon,run])=>({ label, icon, run, active: label==='Done editing' }));
 
+    const savePost = (status, done) => {
+      if (!be.db) { addPost(status); return done(); }
+      const body = { platform:ap, title:av.headline || brief.topic, account:av.account, headline:av.headline, caption:av.caption, hashtags:av.tags, cta:av.cta, image_alt:av.alt, status };
+      if (status==='scheduled') Object.assign(body, { scheduled_at:zonedToIso(sched.date, sched.time, sched.tz), timezone:sched.tz });
+      fetch('/api/posts', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(body) })
+        .then(r => r.json().then(j => ({ ok:r.ok, j })))
+        .then(({ ok, j }) => { if (!ok) return notify('Could not save: '+(j.error||'unknown error'), 'warn'); this.setState({ studioPosts:[this.fromDbPost(j.post)].concat(this.state.studioPosts||[]) }); done(); })
+        .catch(() => notify('Could not save: network error.', 'warn'));
+    };
     const addPost = (status) => {
       const when = status==='draft' ? '—' : formatSchedule(sched.date, sched.time, sched.tz).split(' · ').slice(0,2).join(' · ');
       const post = { id:'st_'+this.rnd(5), title:av.headline || brief.topic, excerpt:av.caption.slice(0,60)+'…', platforms:[ap], account:av.account, when, status, date:sched.date, label:av.name.split(' ')[0] };
       set({ studioPosts:[post].concat(s.studioPosts||[]) });
       return post;
     };
-    const saveDraft = () => { addPost('draft'); notify(av.name+' draft saved — find it under Drafts.'); };
+    const saveDraft = () => savePost('draft', () => notify(av.name+' draft saved'+(be.db?' to the database':'')+' — find it under Drafts.'));
     const addToCalendar = () => {
       if (!sched.date || !sched.time) return notify('Pick a date and time first.','warn');
       if (overLimit) return notify('Caption is over the '+av.name+' limit. Use “Shorten to fit” first.','warn');
-      addPost('scheduled'); notify(av.name+' post scheduled for '+formatSchedule(sched.date, sched.time, sched.tz)+'.');
-      this.setState({ route:'calendar' });
+      savePost('scheduled', () => { notify(av.name+' post scheduled for '+formatSchedule(sched.date, sched.time, sched.tz)+'.'); this.setState({ route:'calendar' }); });
     };
 
     return {
       varTabs, activeVar, platformChips, rewriteActions,
       generate, saveDraft, addToCalendar,
       brief, sched, studioEditing: !!s.sEdit, studioNotice: s.sNotice,
+      aiModeLabel: (be.ai ? 'AI: OpenRouter' : 'AI: mock (no OpenRouter key)')+' · '+(be.db ? 'saved to Supabase' : 'not saved'), aiModeColor: be.ai && be.db ? 'var(--accent-ink)' : 'var(--amber)',
       studioModels: STUDIO_MODELS, studioTones: STUDIO_TONES, studioLanguages: STUDIO_LANGUAGES,
       setBriefField: (k, val) => setBrief({ [k]:val }),
       setSchedField: (k, val) => set({ sSched:Object.assign({}, sched, { [k]:val }) }),
@@ -640,7 +689,7 @@ export class OmniPostLogic extends Store<OmniState> {
     const wizPick = PROV.map(p => Object.assign({ name:p.name, icon:p.icon, color:p.color, go:()=>set({ wizProvider:p.id, wizStep:1, wizAuth:0, wizTested:false, wizSaved:null, wizModels:null }) }, pick(p.id===wp.id)));
 
     // ---- MCP
-    const mcpUrl = 'https://omnipost.mydomain.com/mcp';
+    const mcpUrl = (s.backend && s.backend.mcpUrl) || ((s.origin || 'https://post.avonixai.com') + '/mcp');
     const snippet = JSON.stringify({ mcpServers:{ omnipost:{ type:'http', url:mcpUrl } } }, null, 2);
     const off = s.mcpOff || {};
     const TOOLS = [
@@ -660,8 +709,8 @@ export class OmniPostLogic extends Store<OmniState> {
     const mcpTools = TOOLS.map(([name,desc,scope]) => { const on = !off[name]; return Object.assign({ name, desc, scope, scopeBg:scopeTone[scope][0], scopeFg:scopeTone[scope][1], nameColor: on?'var(--text)':'var(--faint)', toggle:()=>set({ mcpOff:Object.assign({}, off, {[name]:on}) }) }, tog(on)); });
     const openC = s.mcpOpen;
     const CLIENTS = [
-      ['claude','Claude','ph ph-asterisk','#d97757','Custom connector · remote MCP','connected',['Settings → Connectors → Add custom connector','Paste the server URL above','Approve OmniPost access when prompted (OAuth) — the tools appear in chat'],'Available on Claude web and desktop; custom connectors depend on your plan.'],
-      ['chatgpt','ChatGPT','ph ph-circle-half','#10a37f','Connector · developer mode','auth',['Settings → Apps & Connectors → enable developer mode','Create a connector with the server URL above','Authorize OmniPost; or use the GPT Actions schema in REST API'],'MCP connectors in ChatGPT are plan- and workspace-dependent and still evolving.'],
+      ['claude','Claude','ph ph-asterisk','#d97757','Custom connector · remote MCP','connected',['Settings → Connectors → Add custom connector','Paste the server URL above (leave the OAuth client fields empty)','Sign in with your OmniPost password and click Allow — the tools appear in chat'],'Works on Claude web and desktop. The Free plan allows one custom connector.'],
+      ['chatgpt','ChatGPT','ph ph-circle-half','#10a37f','Connector · developer mode','auth',['On chatgpt.com: Settings → Apps & Connectors → Advanced settings → turn on Developer mode','Create a connector, paste the server URL above, choose OAuth','Sign in with your OmniPost password and click Allow'],'Developer mode is a web-only setting and, at the time of writing, not offered on the Free plan.'],
       ['gemini','Gemini CLI','ph ph-diamond','#4285f4','mcpServers in settings.json','disconnected',['Open ~/.gemini/settings.json','Add "omnipost" under mcpServers with httpUrl = server URL','Run /mcp in Gemini CLI to confirm the tools'],'The Gemini web/mobile app doesn’t accept custom MCP servers today — use Gemini CLI or the REST API.'],
       ['ide','Cursor, VS Code & other MCP clients','ph ph-code','var(--text)','Standard MCP client config','disconnected',['Open the client’s MCP settings','Add a server using the JSON config on the left','Sign in to OmniPost in the browser window that opens'],'Any client implementing MCP Streamable HTTP + OAuth works.'],
     ];

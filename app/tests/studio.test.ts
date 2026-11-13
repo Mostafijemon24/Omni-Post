@@ -31,3 +31,15 @@ describe("formatSchedule", () => {
     expect(formatSchedule("", "10:00", "Asia/Dhaka")).toBe("Not scheduled");
   });
 });
+
+import { isoToZoned, zonedToIso } from "@/lib/omnipost/studio";
+describe("time zones", () => {
+  it("converts Dhaka wall time to ISO and back", () => {
+    expect(zonedToIso("2027-01-15", "10:00", "Asia/Dhaka")).toBe("2027-01-15T10:00:00+06:00");
+    expect(isoToZoned("2027-01-15T04:00:00Z", "Asia/Dhaka")).toEqual({ date: "2027-01-15", time: "10:00" });
+  });
+  it("handles DST zones", () => {
+    expect(zonedToIso("2027-07-01", "09:30", "America/New_York")).toBe("2027-07-01T09:30:00-04:00");
+    expect(zonedToIso("2027-01-01", "09:30", "America/New_York")).toBe("2027-01-01T09:30:00-05:00");
+  });
+});

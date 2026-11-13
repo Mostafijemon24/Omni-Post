@@ -92,6 +92,10 @@ export function StudioScreen({ v }: { v: ViewModel }) {
             <i className={v.genIcon} style={css(`font-size:16px; ${v.genSpin}`)} />
             {v.genLabel}
           </button>
+          <div style={css(`font-size:11px; text-align:center; color:${v.aiModeColor};`)}>
+            <i className="ph ph-circle" style={css("font-size:8px; margin-right:5px;")} />
+            {v.aiModeLabel}
+          </div>
         </div>
       </div>
       <div>
