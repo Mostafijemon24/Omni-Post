@@ -17,6 +17,40 @@ npm test           # unit tests (vitest)
 npm run typecheck
 ```
 
+## Backend (Supabase · OpenRouter · MCP)
+
+Set the variables from [`.env.example`](.env.example) on the host. Each feature switches on when its
+variables are present; without them the app stays in the open, mock-only prototype mode.
+
+| Variable | Turns on |
+| --- | --- |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Posts saved to Supabase (`/api/posts`), MCP tools |
+| `OPENROUTER_API_KEY` (`OPENROUTER_MODEL` optional) | Real generation in the Content Studio and the `generate_platform_variations` tool |
+| `OMNIPOST_ADMIN_PASSWORD`, `OMNIPOST_SECRET` (≥ 32 chars) | Dashboard login, and OAuth consent for MCP clients |
+| `PUBLIC_BASE_URL` | Absolute URLs in OAuth metadata, e.g. `https://post.avonixai.com` |
+
+**Database.** Run [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) once in
+Supabase → SQL Editor. RLS is on with no policies, so only the server (service-role key) can read or write.
+
+**MCP endpoint.** `POST {PUBLIC_BASE_URL}/mcp`, Streamable HTTP with JSON responses, stateless.
+Clients sign in with OAuth 2.1 (dynamic client registration, PKCE S256, refresh-token rotation);
+approving a client needs the owner password. Discovery: `/.well-known/oauth-protected-resource` and
+`/.well-known/oauth-authorization-server`. Tools: `create_post_draft`, `schedule_post`, `list_posts`,
+`generate_platform_variations`, `get_caption_limits`. Nothing is published by a tool.
+
+**REST API for automations (n8n, Make, scripts).** Create a token in Integrations → REST API → Generate key
+(shown once, stored hashed), then call `/api/v1/*` with `Authorization: Bearer opk_…`: list/create posts,
+`GET /api/v1/posts/due` for posts whose scheduled time has come, `PATCH /api/v1/posts/{id}` to report
+`published` (with URL) or `failed`, and `POST /api/v1/generate`. Schema: `/api/v1/openapi.json`. Ready-made
+n8n workflows are in [`integrations/n8n`](integrations/n8n). Run
+[`supabase/migrations/002_api_tokens_and_publishing.sql`](supabase/migrations/002_api_tokens_and_publishing.sql) after 001.
+
+**Deploying to the VPS:** see [`../deploy/README.md`](../deploy/README.md) — one-time `setup-vps.sh`, then every push to
+`main` is tested and deployed by GitHub Actions.
+
+Hosting must run Next.js as a server (Vercel, or `npm run build && npm start` on a Node host); a static
+export cannot serve `/mcp`, `/oauth/*` or `/api/*`.
+
 ## Screens
 
 `/dashboard` `/studio` `/image` `/planner` `/calendar` `/posts` `/scheduled` `/published` `/drafts`
@@ -54,8 +88,9 @@ Tailwind in `tailwind.config.ts` for hand-written components.
 
 ## Known limits of this phase
 
-- **No backend.** There is no database, auth, job queue, or real provider/social API call. Keys and
-  tokens shown in the UI are generated in the browser for illustration and are labelled as mock.
+- **Partial backend.** Posts, owner login, AI generation (OpenRouter) and the MCP endpoint are real once
+  configured. There is still no job queue and no social-network publishing; the Accounts, Providers and
+  Integrations screens other than the MCP URL remain mock.
 - **View-model typing.** `src/lib/omnipost/logic.ts` is the design prototype's logic ported as-is and is
   excluded from type checking (`@ts-nocheck`); screens receive it as an untyped view model. The typed
   layer is `src/lib/adapters` and `src/lib/ingest`. Moving the sample data behind those adapters, screen

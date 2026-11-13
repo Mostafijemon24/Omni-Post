@@ -39,6 +39,11 @@ export function OmniProvider({ children }: { children: ReactNode }) {
     });
   }, [logic]);
 
+  useEffect(() => {
+    logic.setState({ origin: window.location.origin });
+    void logic.loadBackend();
+  }, [logic]);
+
   useEffect(() => () => logic.componentWillUnmount(), [logic]);
 
   const vm = logic.renderVals();

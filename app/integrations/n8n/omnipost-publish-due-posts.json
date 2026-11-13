@@ -1,0 +1,120 @@
+{
+  "name": "OmniPost — publish due posts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://post.avonixai.com/api/v1/posts/due",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "name": "Get due posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "OmniPost API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Publish to the network (replace me)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        460,
+        0
+      ],
+      "notes": "Replace with your publishing node (Facebook Graph API, LinkedIn, X, …). Each item is one OmniPost post: use {{$json.platform}}, {{$json.caption}}, {{$json.hashtags.join(' ')}}. Output a field `url` with the live post URL if you have it."
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://post.avonixai.com/api/v1/posts/{{ $('Get due posts').item.json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: \"published\", published_url: $json.url || undefined }) }}"
+      },
+      "name": "Mark published in OmniPost",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "OmniPost API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get due posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get due posts": {
+      "main": [
+        [
+          {
+            "node": "Publish to the network (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to the network (replace me)": {
+      "main": [
+        [
+          {
+            "node": "Mark published in OmniPost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
