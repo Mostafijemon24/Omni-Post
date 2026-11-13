@@ -73,7 +73,8 @@ browser, column mapping, validation, preview, import), Connected Apps, and Activ
 ```
 src/app/                 Next.js App Router: layout, one static route per screen
 src/components/          Shell (sidebar, top bar, mobile drawer), provider, screen switch
-src/screens/             Screen components, ported 1:1 from the design template (generated)
+src/screens/             Screen components, ported 1:1 from the design template (generated;
+                         Studio, Integrations, Posts and Calendar are maintained by hand)
 src/lib/omnipost/        View-model logic ported from the design, and its state store
 src/lib/adapters/        Typed contracts (AIProvider, SocialConnector, PublishingProvider),
                          registries and mock adapters
@@ -97,8 +98,14 @@ Tailwind in `tailwind.config.ts` for hand-written components.
 ## Known limits of this phase
 
 - **Partial backend.** Posts, owner login, AI generation (OpenRouter) and the MCP endpoint are real once
-  configured. There is still no job queue and no social-network publishing; the Accounts, Providers and
-  Integrations screens other than the MCP URL remain mock.
+  configured. With the database connected, All Posts / Scheduled / Published / Drafts, the sidebar counts,
+  the Content Calendar and the dashboard counters show the stored posts, and a post can be scheduled, marked
+  as published, moved to drafts or deleted from its row (`PATCH`/`DELETE /api/posts/{id}`). Without a
+  database those screens show the design's sample data, and say so.
+- **Still sample-only screens.** AI Image Studio, Content Planner, Media Library, Social Accounts,
+  AI Providers, Automation, Publishing Logs, Analytics and Settings are the design with sample data: their
+  controls do nothing yet. There is no job queue and no social-network publishing; "published" is recorded
+  by you or by an automation (n8n) through the REST API.
 - **View-model typing.** `src/lib/omnipost/logic.ts` is the design prototype's logic ported as-is and is
   excluded from type checking (`@ts-nocheck`); screens receive it as an untyped view model. The typed
   layer is `src/lib/adapters` and `src/lib/ingest`. Moving the sample data behind those adapters, screen
