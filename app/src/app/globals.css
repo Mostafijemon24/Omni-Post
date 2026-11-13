@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* ---- Design tokens (from the OmniPost AI design) ---- */
+:root {
+  --bg: #fafafa; --surface: #ffffff; --surface-2: #f4f4f5; --surface-3: #ececee;
+  --border: #e4e4e7; --border-strong: #d4d4d8;
+  --text: #18181b; --text-2: #52525b; --muted: #71717a; --faint: #a1a1aa;
+  --accent: #0ca678; --accent-ink: #087f5b; --accent-soft: rgba(12, 166, 120, 0.1); --accent-border: rgba(12, 166, 120, 0.28);
+  --primary: #18181b; --primary-text: #fafafa;
+  --amber: #b45309; --amber-soft: rgba(217, 119, 6, 0.12);
+  --red: #dc2626; --red-soft: rgba(220, 38, 38, 0.1);
+  --blue: #2563eb; --blue-soft: rgba(37, 99, 235, 0.1);
+  --violet: #7c3aed; --violet-soft: rgba(124, 58, 237, 0.1);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04), 0 1px 3px rgba(24, 24, 27, 0.04);
+  --shadow-md: 0 2px 8px rgba(24, 24, 27, 0.06), 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-lg: 0 12px 32px rgba(24, 24, 27, 0.1), 0 2px 8px rgba(24, 24, 27, 0.06);
+}
+.om-dark {
+  --bg: #09090b; --surface: #131316; --surface-2: #1c1c20; --surface-3: #26262b;
+  --border: #27272a; --border-strong: #3f3f46;
+  --text: #fafafa; --text-2: #d4d4d8; --muted: #a1a1aa; --faint: #71717a;
+  --accent: #10b981; --accent-ink: #34d399; --accent-soft: rgba(16, 185, 129, 0.14); --accent-border: rgba(16, 185, 129, 0.34);
+  --primary: #fafafa; --primary-text: #18181b;
+  --amber: #f59e0b; --amber-soft: rgba(245, 158, 11, 0.14);
+  --red: #f87171; --red-soft: rgba(248, 113, 113, 0.14);
+  --blue: #60a5fa; --blue-soft: rgba(96, 165, 250, 0.14);
+  --violet: #a78bfa; --violet-soft: rgba(167, 139, 250, 0.14);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+@layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { font-family: "Geist", system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: normal; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-ink); }
+  ::selection { background: var(--accent-soft); }
+}
+
+.om-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.om-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 3px solid var(--bg); }
+.om-scroll::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes om-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes om-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes om-spin { to { transform: rotate(360deg); } }
+@keyframes om-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.om-screen { animation: om-fade 0.28s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .om-screen, .om-screen * { animation-duration: 0.01ms !important; }
+}
+
+/* ---- Responsive layer: the design is desktop-first; these rules adapt it for phones/tablets ---- */
+@media (max-width: 900px) {
+  .om-stack { grid-template-columns: minmax(0, 1fr) !important; }
+  .om-main { padding: 16px !important; }
+  .om-screen { max-width: 100% !important; }
+  .om-screen > * { min-width: 0; }
+}
+
+.om-root { height: 100dvh !important; }
+
+@media (max-width: 900px) {
+    .om-aside { position: fixed; inset: 0 auto 0 0; z-index: 40; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
+  .om-aside.is-open { transform: translateX(0); }
+  .om-topbar { padding: 0 14px !important; gap: 10px !important; }
+  .om-search { display: none !important; }
+  .om-title { flex: 1; }
+  .om-title + div { display: none !important; } /* the desktop spacer */
+  .om-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (max-width: 900px) {
+  .om-title > div:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block !important; }
+  .om-title > div:first-child > span { margin-left: 8px; }
+  /* Toolbars and header rows wrap instead of forcing sideways scroll. */
+  .om-screen > div[style*="display:flex"]:not([style*="flex-direction:column"]),
+  .om-screen > div[style*="display: flex"]:not([style*="flex-direction: column"]) { flex-wrap: wrap; }
+}
+
+@media (max-width: 520px) {
+  .om-create-label { display: none; }
+  .om-topbar > button:last-child { padding: 0 !important; width: 36px; justify-content: center; }
+}
