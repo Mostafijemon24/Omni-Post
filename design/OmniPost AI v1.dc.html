@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-3:#ececee;
+    --border:#e4e4e7; --border-strong:#d4d4d8;
+    --text:#18181b; --text-2:#52525b; --muted:#71717a; --faint:#a1a1aa;
+    --accent:#0ca678; --accent-ink:#087f5b; --accent-soft:rgba(12,166,120,0.10); --accent-border:rgba(12,166,120,0.28);
+    --primary:#18181b; --primary-text:#fafafa;
+    --amber:#b45309; --amber-soft:rgba(217,119,6,0.12);
+    --red:#dc2626; --red-soft:rgba(220,38,38,0.10);
+    --blue:#2563eb; --blue-soft:rgba(37,99,235,0.10);
+    --violet:#7c3aed; --violet-soft:rgba(124,58,237,0.10);
+    --shadow-sm:0 1px 2px rgba(24,24,27,0.04), 0 1px 3px rgba(24,24,27,0.04);
+    --shadow-md:0 2px 8px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04);
+    --shadow-lg:0 12px 32px rgba(24,24,27,0.10), 0 2px 8px rgba(24,24,27,0.06);
+  }
+  .om-dark{
+    --bg:#09090b; --surface:#131316; --surface-2:#1c1c20; --surface-3:#26262b;
+    --border:#27272a; --border-strong:#3f3f46;
+    --text:#fafafa; --text-2:#d4d4d8; --muted:#a1a1aa; --faint:#71717a;
+    --accent:#10b981; --accent-ink:#34d399; --accent-soft:rgba(16,185,129,0.14); --accent-border:rgba(16,185,129,0.34);
+    --primary:#fafafa; --primary-text:#18181b;
+    --amber:#f59e0b; --amber-soft:rgba(245,158,11,0.14);
+    --red:#f87171; --red-soft:rgba(248,113,113,0.14);
+    --blue:#60a5fa; --blue-soft:rgba(96,165,250,0.14);
+    --violet:#a78bfa; --violet-soft:rgba(167,139,250,0.14);
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md:0 2px 10px rgba(0,0,0,0.5);
+    --shadow-lg:0 16px 40px rgba(0,0,0,0.6);
+  }
+  html,body{ height:100%; }
+  body{ font-family:'Geist',system-ui,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
+  a{ color:var(--accent); text-decoration:none; }
+  a:hover{ color:var(--accent-ink); }
+  ::selection{ background:var(--accent-soft); }
+  .om-scroll::-webkit-scrollbar{ width:10px; height:10px; }
+  .om-scroll::-webkit-scrollbar-thumb{ background:var(--border-strong); border-radius:8px; border:3px solid var(--bg); }
+  .om-scroll::-webkit-scrollbar-track{ background:transparent; }
+  @keyframes om-fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes om-pulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+  @keyframes om-spin{ to{ transform:rotate(360deg);} }
+  @keyframes om-bar{ from{ transform:scaleX(0);} to{ transform:scaleX(1);} }
+  .om-screen{ animation:om-fade 0.28s ease; }
+</style>
+</helmet>
+
+<div class="{{ rootClass }}" style="display:flex; height:100vh; width:100%; overflow:hidden; background:var(--bg); color:var(--text);">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside style="width:252px; flex:0 0 252px; height:100%; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column;">
+    <div style="height:60px; flex:0 0 60px; display:flex; align-items:center; gap:10px; padding:0 18px; border-bottom:1px solid var(--border);">
+      <div style="width:28px; height:28px; border-radius:8px; background:var(--primary); display:flex; align-items:center; justify-content:center;">
+        <div style="width:11px; height:11px; border-radius:50%; background:var(--accent);"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; line-height:1.1;">
+        <span style="font-weight:600; font-size:14px; letter-spacing:-0.01em;">OmniPost</span>
+        <span style="font-family:'Geist Mono',monospace; font-size:9.5px; letter-spacing:0.14em; color:var(--faint); text-transform:uppercase;">AI Platform</span>
+      </div>
+    </div>
+
+    <nav class="om-scroll" style="flex:1; overflow-y:auto; padding:12px 12px 20px;">
+      <sc-for list="{{ navSections }}" as="sec" hint-placeholder-count="6">
+        <div style="margin-bottom:14px;">
+          <div style="font-family:'Geist Mono',monospace; font-size:9.5px; letter-spacing:0.14em; color:var(--faint); text-transform:uppercase; padding:4px 10px 6px;">{{ sec.title }}</div>
+          <sc-for list="{{ sec.items }}" as="item" hint-placeholder-count="3">
+            <div onClick="{{ item.go }}" style="display:flex; align-items:center; gap:11px; padding:7px 10px; border-radius:7px; cursor:pointer; margin-bottom:1px; color:{{ item.fg }}; background:{{ item.bg }}; font-weight:{{ item.weight }}; font-size:13px; position:relative;" style-hover="background:var(--surface-2);">
+              <i class="{{ item.icon }}" style="font-size:16px; width:18px; text-align:center; color:{{ item.iconColor }};"></i>
+              <span style="flex:1;">{{ item.label }}</span>
+              <sc-if value="{{ item.badge }}" hint-placeholder-val="">
+                <span style="font-family:'Geist Mono',monospace; font-size:10px; padding:1px 6px; border-radius:20px; background:{{ item.badgeBg }}; color:{{ item.badgeFg }};">{{ item.badge }}</span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="flex:0 0 auto; border-top:1px solid var(--border); padding:10px 12px; display:flex; align-items:center; gap:10px;">
+      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--blue)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:600;">AR</div>
+      <div style="flex:1; line-height:1.2; min-width:0;">
+        <div style="font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Owner</div>
+        <div style="font-size:11px; color:var(--muted);">Single-user · Admin</div>
+      </div>
+      <i class="ph ph-gear" onClick="{{ goSettings }}" style="font-size:16px; color:var(--muted); cursor:pointer;"></i>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div style="flex:1; height:100%; display:flex; flex-direction:column; min-width:0;">
+
+    <!-- TOPBAR -->
+    <header style="height:60px; flex:0 0 60px; display:flex; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:var(--surface);">
+      <div style="min-width:0;">
+        <div style="font-size:15px; font-weight:600; letter-spacing:-0.01em; display:flex; align-items:center; gap:9px;">{{ pageTitle }}
+          <sc-if value="{{ pageTag }}" hint-placeholder-val="">
+            <span style="font-family:'Geist Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent-border); padding:2px 7px; border-radius:5px;">{{ pageTag }}</span>
+          </sc-if>
+        </div>
+        <div style="font-size:12px; color:var(--muted); margin-top:1px;">{{ pageSub }}</div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:7px 11px; width:210px; color:var(--muted);">
+        <i class="ph ph-magnifying-glass" style="font-size:15px;"></i>
+        <span style="font-size:12.5px;">Search everything…</span>
+        <span style="margin-left:auto; font-family:'Geist Mono',monospace; font-size:10px; border:1px solid var(--border-strong); border-radius:4px; padding:1px 5px;">⌘K</span>
+      </div>
+      <button onClick="{{ toggleTheme }}" title="Toggle theme" style="width:36px; height:36px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); cursor:pointer; display:flex; align-items:center; justify-content:center;" style-hover="background:var(--surface-2);">
+        <i class="{{ themeIcon }}" style="font-size:17px;"></i>
+      </button>
+      <div onClick="{{ goLogs }}" style="position:relative; width:36px; height:36px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); cursor:pointer; display:flex; align-items:center; justify-content:center;" style-hover="background:var(--surface-2);">
+        <i class="ph ph-bell" style="font-size:17px;"></i>
+        <span style="position:absolute; top:7px; right:8px; width:7px; height:7px; border-radius:50%; background:var(--red); border:2px solid var(--surface);"></span>
+      </div>
+      <button onClick="{{ goStudio }}" style="height:36px; padding:0 15px; border-radius:9px; border:none; background:var(--primary); color:var(--primary-text); font-family:'Geist',sans-serif; font-weight:500; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:7px;" style-hover="opacity:0.9;">
+        <i class="ph-bold ph-plus" style="font-size:14px;"></i>Create
+      </button>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="om-scroll" style="flex:1; overflow-y:auto; padding:26px; background:var(--bg);">
+
+      <!-- ===== DASHBOARD ===== -->
+      <sc-if value="{{ r.dashboard }}" hint-placeholder-val="{{ true }}">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(176px,1fr)); gap:14px; margin-bottom:22px;">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 16px 14px; box-shadow:var(--shadow-sm);">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:12px; color:var(--muted);">{{ s.label }}</span>
+                <i class="{{ s.icon }}" style="font-size:15px; color:{{ s.color }};"></i>
+              </div>
+              <div style="font-size:26px; font-weight:600; letter-spacing:-0.02em; margin-top:8px;">{{ s.value }}</div>
+              <div style="font-size:11.5px; color:{{ s.deltaColor }}; margin-top:3px; display:flex; align-items:center; gap:4px;"><i class="{{ s.deltaIcon }}" style="font-size:12px;"></i>{{ s.delta }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:16px; align-items:start;">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <!-- upcoming -->
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:14px;">Next scheduled posts</div>
+                <span onClick="{{ goScheduled }}" style="font-size:12px; color:var(--accent-ink); cursor:pointer;">View queue →</span>
+              </div>
+              <sc-for list="{{ upcoming }}" as="p" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:13px; padding:12px 18px; border-bottom:1px solid var(--border);">
+                  <div style="width:40px; height:40px; border-radius:8px; background:var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="{{ p.icon }}" style="font-size:18px; color:{{ p.color }};"></i>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.title }}</div>
+                    <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">{{ p.accounts }}</div>
+                  </div>
+                  <div style="text-align:right; flex-shrink:0;">
+                    <div style="font-size:12px; font-weight:500;">{{ p.time }}</div>
+                    <div style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--muted);">{{ p.date }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <!-- AI activity -->
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:16px 18px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-weight:600; font-size:14px;">AI generation activity · 7 days</div>
+                <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--muted);">142 runs</span>
+              </div>
+              <div style="display:flex; align-items:flex-end; gap:8px; height:88px;">
+                <sc-for list="{{ activity }}" as="a" hint-placeholder-count="7">
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+                    <div style="width:100%; height:{{ a.h }}; background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:5px 5px 0 0; display:flex; align-items:flex-start; justify-content:center;">
+                      <div style="width:100%; height:{{ a.fill }}; background:var(--accent); border-radius:5px 5px 0 0; transform-origin:bottom; animation:om-bar 0.5s ease;"></div>
+                    </div>
+                    <span style="font-size:10px; color:var(--muted);">{{ a.day }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <!-- quick actions -->
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:16px 18px;">
+              <div style="font-weight:600; font-size:14px; margin-bottom:12px;">Quick actions</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
+                <sc-for list="{{ quickActions }}" as="q" hint-placeholder-count="6">
+                  <div onClick="{{ q.go }}" style="display:flex; flex-direction:column; gap:7px; padding:12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; background:var(--surface-2);" style-hover="border-color:var(--accent-border); background:var(--accent-soft);">
+                    <i class="{{ q.icon }}" style="font-size:18px; color:var(--accent-ink);"></i>
+                    <span style="font-size:12px; font-weight:500;">{{ q.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <!-- account health -->
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border);">
+                <div style="font-weight:600; font-size:14px;">Account health</div>
+                <span onClick="{{ goAccounts }}" style="font-size:12px; color:var(--accent-ink); cursor:pointer;">Manage →</span>
+              </div>
+              <sc-for list="{{ healthAccounts }}" as="h" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:11px; padding:10px 18px; border-bottom:1px solid var(--border);">
+                  <i class="{{ h.icon }}" style="font-size:18px; color:{{ h.color }}; width:20px; text-align:center;"></i>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ h.name }}</div>
+                    <div style="font-size:11px; color:var(--muted);">{{ h.detail }}</div>
+                  </div>
+                  <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:{{ h.statusColor }};"><span style="width:6px; height:6px; border-radius:50%; background:{{ h.statusColor }};"></span>{{ h.status }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <!-- failed -->
+            <div style="background:var(--red-soft); border:1px solid rgba(220,38,38,0.2); border-radius:12px; padding:14px 18px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><i class="ph-bold ph-warning" style="color:var(--red); font-size:16px;"></i><span style="font-weight:600; font-size:13.5px; color:var(--red);">2 publishing jobs failed</span></div>
+              <div style="font-size:12px; color:var(--text-2); margin-bottom:10px;">Instagram token expired · LinkedIn rate-limited. Both preserved in the dead-letter queue.</div>
+              <button onClick="{{ goLogs }}" style="font-size:12px; font-weight:500; background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:6px 11px; cursor:pointer; color:var(--text);">Review & recover</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== AI CONTENT STUDIO ===== -->
+      <sc-if value="{{ r.studio }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:340px 1fr; gap:18px; align-items:start;">
+        <!-- input panel -->
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); position:sticky; top:0;">
+          <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;"><i class="ph ph-sparkle" style="color:var(--accent-ink); font-size:16px;"></i><span style="font-weight:600; font-size:14px;">Generation brief</span></div>
+          <div style="padding:16px 18px; display:flex; flex-direction:column; gap:13px;">
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">AI PROVIDER & MODEL</label>
+              <div style="display:flex; gap:8px;">
+                <div style="flex:1; display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface-2); font-size:12.5px;"><i class="ph ph-brain" style="color:var(--accent-ink);"></i>Claude · Sonnet 4.5</div>
+                <div style="width:38px; border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--muted);"><i class="ph ph-caret-down"></i></div>
+              </div>
+            </div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">TOPIC / MAIN SUBJECT</label>
+              <div style="border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:12.5px; background:var(--surface-2);">The future of AI in WordPress development</div></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">TONE</label><div style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12.5px; background:var(--surface-2); display:flex; justify-content:space-between; align-items:center;">Authoritative<i class="ph ph-caret-down" style="color:var(--muted); font-size:12px;"></i></div></div>
+              <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">LANGUAGE</label><div style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12.5px; background:var(--surface-2); display:flex; justify-content:space-between; align-items:center;">English<i class="ph ph-caret-down" style="color:var(--muted); font-size:12px;"></i></div></div>
+            </div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">FOCUS KEYWORD</label><div style="border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:12.5px; background:var(--surface-2);">AI web development</div></div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:7px;">TARGET PLATFORMS</label>
+              <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                <sc-for list="{{ platformChips }}" as="c" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:20px; font-size:12px; border:1px solid {{ c.border }}; background:{{ c.bg }}; color:{{ c.fg }};"><i class="{{ c.icon }}"></i>{{ c.name }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <button onClick="{{ generate }}" style="margin-top:4px; height:40px; border:none; border-radius:9px; background:var(--primary); color:var(--primary-text); font-family:'Geist',sans-serif; font-weight:500; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;" style-hover="opacity:0.9;">
+                <i class="{{ genIcon }}" style="font-size:16px; {{ genSpin }}"></i>{{ genLabel }}</button>
+          </div>
+        </div>
+
+        <!-- output / variations -->
+        <div>
+          <div style="display:flex; align-items:center; gap:7px; margin-bottom:12px; flex-wrap:wrap;">
+            <sc-for list="{{ varTabs }}" as="t" hint-placeholder-count="5">
+              <div onClick="{{ t.go }}" style="display:flex; align-items:center; gap:7px; padding:8px 13px; border-radius:9px; font-size:12.5px; font-weight:{{ t.weight }}; cursor:pointer; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }};"><i class="{{ t.icon }}"></i>{{ t.name }}</div>
+            </sc-for>
+          </div>
+
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--border); background:var(--surface-2);">
+              <div style="display:flex; align-items:center; gap:9px;"><i class="{{ activeVar.icon }}" style="font-size:18px; color:{{ activeVar.color }};"></i><span style="font-weight:600; font-size:14px;">{{ activeVar.name }} variation</span>
+                <span style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:2px 7px; border-radius:5px;">{{ activeVar.account }}</span></div>
+              <div style="display:flex; gap:5px;">
+                <sc-for list="{{ rewriteActions }}" as="a" hint-placeholder-count="4">
+                  <div title="{{ a.label }}" style="width:30px; height:30px; border-radius:7px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2);" style-hover="background:var(--surface-3);"><i class="{{ a.icon }}" style="font-size:15px;"></i></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="padding:18px;">
+              <div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.1em; color:var(--faint); margin-bottom:6px;">HEADLINE</div>
+              <div style="font-size:16px; font-weight:600; letter-spacing:-0.01em; margin-bottom:14px;">{{ activeVar.headline }}</div>
+              <div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.1em; color:var(--faint); margin-bottom:6px;">CAPTION</div>
+              <div style="font-size:13.5px; line-height:1.65; color:var(--text-2); background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:13px 15px; white-space:pre-wrap;">{{ activeVar.caption }}</div>
+              <div style="display:flex; align-items:center; gap:14px; margin:10px 2px 16px; font-size:11.5px; color:var(--muted);">
+                <span><i class="ph ph-text-aa"></i> {{ activeVar.chars }} chars</span>
+                <span style="color:{{ activeVar.limitColor }};"><i class="ph ph-gauge"></i> limit {{ activeVar.limit }}</span>
+                <span><i class="ph ph-hash"></i> {{ activeVar.tagCount }} hashtags</span>
+              </div>
+              <div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.1em; color:var(--faint); margin-bottom:7px;">HASHTAGS</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+                <sc-for list="{{ activeVar.tags }}" as="tag" hint-placeholder-count="5">
+                  <span style="font-size:11.5px; color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent-border); padding:3px 9px; border-radius:6px;">{{ tag }}</span>
+                </sc-for>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                <div style="border:1px solid var(--border); border-radius:10px; overflow:hidden;">
+                  <div style="height:120px; background:repeating-linear-gradient(45deg,var(--surface-2),var(--surface-2) 10px,var(--surface-3) 10px,var(--surface-3) 20px); display:flex; align-items:center; justify-content:center;"><span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--muted);">{{ activeVar.imgSize }}</span></div>
+                  <div style="padding:9px 12px; font-size:11px; color:var(--muted); display:flex; justify-content:space-between;"><span>AI image · attached</span><span style="color:var(--accent-ink); cursor:pointer;">Edit →</span></div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.1em; color:var(--faint);">CALL TO ACTION</div>
+                  <div style="font-size:12.5px; border:1px solid var(--border); border-radius:8px; padding:8px 11px; background:var(--surface-2);">{{ activeVar.cta }}</div>
+                  <div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.1em; color:var(--faint);">IMAGE ALT TEXT</div>
+                  <div style="font-size:12px; border:1px solid var(--border); border-radius:8px; padding:8px 11px; background:var(--surface-2); color:var(--text-2); line-height:1.4;">{{ activeVar.alt }}</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding-top:14px; border-top:1px solid var(--border);">
+                <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted);"><i class="ph ph-calendar-dots"></i>{{ activeVar.schedule }}</div>
+                <div style="flex:1;"></div>
+                <button style="font-size:12.5px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 13px; cursor:pointer; color:var(--text);">Save draft</button>
+                <button onClick="{{ goCalendar }}" style="font-size:12.5px; background:var(--accent); border:none; border-radius:8px; padding:8px 14px; cursor:pointer; color:#fff; font-weight:500; display:flex; align-items:center; gap:6px;"><i class="ph ph-calendar-plus"></i>Add to calendar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== AI IMAGE STUDIO ===== -->
+      <sc-if value="{{ r.image }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:1fr 330px; gap:18px; align-items:start;">
+        <div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--border);"><span style="font-weight:600; font-size:14px;">Canvas · Instagram Square</span>
+              <div style="display:flex; gap:5px;">
+                <sc-for list="{{ imgTools }}" as="t" hint-placeholder-count="5"><div title="{{ t.label }}" style="width:30px; height:30px; border-radius:7px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-2);" style-hover="background:var(--surface-3);"><i class="{{ t.icon }}" style="font-size:15px;"></i></div></sc-for>
+              </div>
+            </div>
+            <div style="padding:22px; display:flex; justify-content:center; background:var(--surface-2);">
+              <div style="width:360px; height:360px; border-radius:10px; border:1px solid var(--border); background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 14px,var(--surface-3) 14px,var(--surface-3) 28px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; box-shadow:var(--shadow-md);">
+                <i class="ph ph-image" style="font-size:40px; color:var(--faint);"></i>
+                <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--muted);">1080 × 1080 · generated image</span>
+                <span style="font-size:11px; color:var(--faint); max-width:240px; text-align:center;">Drop a real asset here, or regenerate from the prompt →</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:16px 18px;">
+            <div style="font-weight:600; font-size:13.5px; margin-bottom:11px;">Export presets</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:9px;">
+              <sc-for list="{{ imgPresets }}" as="p" hint-placeholder-count="8">
+                <div style="border:1px solid {{ p.border }}; background:{{ p.bg }}; border-radius:9px; padding:10px 11px; cursor:pointer;" style-hover="border-color:var(--accent-border);">
+                  <div style="display:flex; align-items:center; gap:7px; font-size:12px; font-weight:500;"><i class="{{ p.icon }}" style="color:{{ p.color }};"></i>{{ p.name }}</div>
+                  <div style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--muted); margin-top:4px;">{{ p.dims }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:16px 18px;">
+            <div style="font-weight:600; font-size:13.5px; margin-bottom:11px; display:flex; align-items:center; gap:7px;"><i class="ph ph-magic-wand" style="color:var(--accent-ink);"></i>Generation prompt</div>
+            <div style="font-size:12.5px; line-height:1.6; color:var(--text-2); background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:11px 13px;">Editorial hero image of a modern developer workspace, soft daylight, muted palette, WordPress dashboard on screen, shallow depth of field, premium tech-magazine aesthetic.</div>
+            <div style="display:flex; gap:8px; margin-top:11px;">
+              <div style="flex:1; display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface-2); font-size:12px;"><i class="ph ph-sparkle" style="color:var(--accent-ink);"></i>DALL·E 3</div>
+              <button style="padding:0 14px; border:none; border-radius:8px; background:var(--primary); color:var(--primary-text); font-size:12.5px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="ph ph-arrows-clockwise"></i>Regenerate</button>
+            </div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+            <div style="padding:13px 18px; border-bottom:1px solid var(--border); font-weight:600; font-size:13.5px;">Image SEO & metadata</div>
+            <div style="padding:14px 18px; display:flex; flex-direction:column; gap:11px;">
+              <sc-for list="{{ imgMeta }}" as="m" hint-placeholder-count="6">
+                <div><div style="font-size:10.5px; font-family:'Geist Mono',monospace; letter-spacing:0.08em; color:var(--faint); margin-bottom:4px;">{{ m.label }}</div>
+                  <div style="font-size:12.5px; color:var(--text-2); border:1px solid var(--border); border-radius:7px; padding:7px 10px; background:var(--surface-2); line-height:1.4;">{{ m.value }}</div></div>
+              </sc-for>
+              <div style="font-size:11px; color:var(--muted); display:flex; gap:6px; align-items:flex-start;"><i class="ph ph-info" style="margin-top:1px;"></i>EXIF/IPTC/XMP written where supported. Most social networks strip embedded metadata on upload.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== CONTENT PLANNER ===== -->
+      <sc-if value="{{ r.planner }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:360px 1fr; gap:18px; align-items:start;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+          <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;"><i class="ph ph-stack" style="color:var(--accent-ink);"></i><span style="font-weight:600; font-size:14px;">Bulk content plan</span></div>
+          <div style="padding:16px 18px; display:flex; flex-direction:column; gap:14px;">
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:7px;">PLAN HORIZON</label>
+              <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                <sc-for list="{{ horizons }}" as="h" hint-placeholder-count="6"><div onClick="{{ h.go }}" style="padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer; border:1px solid {{ h.border }}; background:{{ h.bg }}; color:{{ h.fg }}; font-weight:{{ h.weight }};">{{ h.label }}</div></sc-for>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">FREQUENCY</label><div style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12.5px; background:var(--surface-2);">1 / day</div></div>
+              <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:5px;">TIMEZONE</label><div style="border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:12.5px; background:var(--surface-2);">Asia/Dhaka</div></div>
+            </div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:7px;">PUBLISHING DAYS</label>
+              <div style="display:flex; gap:5px;">
+                <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7"><div style="flex:1; text-align:center; padding:7px 0; border-radius:7px; font-size:11px; font-weight:500; cursor:pointer; border:1px solid {{ d.border }}; background:{{ d.bg }}; color:{{ d.fg }};">{{ d.label }}</div></sc-for>
+              </div>
+            </div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:7px;">POSTING TIMES</label>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:12px; padding:5px 10px; border-radius:7px; background:var(--surface-2); border:1px solid var(--border);">09:00</span>
+                <span style="font-size:12px; padding:5px 10px; border-radius:7px; background:var(--surface-2); border:1px solid var(--border);">14:30</span>
+                <span style="font-size:12px; padding:5px 10px; border-radius:7px; background:var(--surface-2); border:1px solid var(--border);">19:00</span>
+                <span style="font-size:12px; padding:5px 10px; border-radius:7px; border:1px dashed var(--border-strong); color:var(--muted); cursor:pointer;">+ add</span>
+              </div>
+            </div>
+            <div><label style="font-size:11px; font-weight:500; color:var(--muted); display:block; margin-bottom:7px;">TARGET ACCOUNTS</label>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ platformChips }}" as="c" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:20px; font-size:12px; border:1px solid {{ c.border }}; background:{{ c.bg }}; color:{{ c.fg }};"><i class="{{ c.icon }}"></i>{{ c.name }}</div></sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px;">
+              <div style="font-size:12.5px;"><span style="font-weight:500;">Approval before publish</span><div style="font-size:11px; color:var(--muted);">Hold drafts for review</div></div>
+              <div style="width:36px; height:21px; border-radius:20px; background:var(--accent); position:relative; cursor:pointer;"><div style="position:absolute; top:2px; right:2px; width:17px; height:17px; border-radius:50%; background:#fff;"></div></div>
+            </div>
+            <button style="height:40px; border:none; border-radius:9px; background:var(--primary); color:var(--primary-text); font-family:'Geist',sans-serif; font-weight:500; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;"><i class="ph ph-sparkle"></i>Generate 30-post plan</button>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+            <div style="font-weight:600; font-size:14px;">Preview · 30 generated items</div>
+            <span style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent-border); padding:2px 8px; border-radius:6px;">0 duplicates</span>
+            <div style="flex:1;"></div>
+            <button style="font-size:12px; background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:6px 11px; cursor:pointer; color:var(--text);"><i class="ph ph-check-square"></i> Bulk approve</button>
+            <button onClick="{{ goCalendar }}" style="font-size:12px; background:var(--accent); border:none; border-radius:7px; padding:6px 11px; cursor:pointer; color:#fff; font-weight:500;">Schedule all</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{ plannerItems }}" as="p" hint-placeholder-count="7">
+              <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 15px; display:flex; align-items:center; gap:13px; box-shadow:var(--shadow-sm);">
+                <div style="width:34px; height:34px; border-radius:7px; background:var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'Geist Mono',monospace; font-size:12px; color:var(--muted);">{{ p.num }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.title }}</div>
+                  <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">{{ p.category }} · {{ p.platforms }}</div>
+                </div>
+                <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--text-2); flex-shrink:0;">{{ p.when }}</div>
+                <span style="font-size:10.5px; padding:3px 8px; border-radius:6px; background:{{ p.statusBg }}; color:{{ p.statusFg }}; flex-shrink:0;">{{ p.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== CALENDAR ===== -->
+      <sc-if value="{{ r.calendar }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <div style="display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:3px;">
+            <sc-for list="{{ calViews }}" as="v" hint-placeholder-count="5"><div style="padding:6px 13px; border-radius:6px; font-size:12.5px; font-weight:{{ v.weight }}; cursor:pointer; background:{{ v.bg }}; color:{{ v.fg }};">{{ v.label }}</div></sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <i class="ph ph-caret-left" style="cursor:pointer; color:var(--muted); font-size:18px;"></i>
+            <span style="font-weight:600; font-size:15px; min-width:150px; text-align:center;">January 2027</span>
+            <i class="ph ph-caret-right" style="cursor:pointer; color:var(--muted); font-size:18px;"></i>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex; align-items:center; gap:14px; font-size:11.5px; color:var(--muted);">
+            <span><i class="ph-bold ph-circle" style="color:var(--accent);"></i> Scheduled</span>
+            <span><i class="ph-bold ph-circle" style="color:var(--blue);"></i> Published</span>
+            <span><i class="ph-bold ph-circle" style="color:var(--amber);"></i> Pending</span>
+          </div>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--border);">
+            <sc-for list="{{ dayHeaders }}" as="d" hint-placeholder-count="7"><div style="padding:9px 12px; font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; border-right:1px solid var(--border);">{{ d }}</div></sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:118px;">
+            <sc-for list="{{ calCells }}" as="c" hint-placeholder-count="35">
+              <div style="border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:7px 8px; display:flex; flex-direction:column; gap:4px; background:{{ c.bg }}; overflow:hidden;">
+                <div style="font-size:11.5px; font-weight:{{ c.dayWeight }}; color:{{ c.dayColor }};">{{ c.day }}</div>
+                <sc-for list="{{ c.posts }}" as="e" hint-placeholder-count="0">
+                  <div style="font-size:10.5px; padding:3px 6px; border-radius:5px; background:{{ e.bg }}; color:{{ e.fg }}; display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; cursor:pointer;"><i class="{{ e.icon }}" style="font-size:11px;"></i><span style="overflow:hidden; text-overflow:ellipsis;">{{ e.label }}</span></div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== POSTS LISTS (all/scheduled/published/drafts) ===== -->
+      <sc-if value="{{ r.posts }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <sc-for list="{{ postFilters }}" as="f" hint-placeholder-count="5"><div style="padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer; border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-weight:{{ f.weight }};">{{ f.label }}<span style="font-family:'Geist Mono',monospace; font-size:10px; margin-left:6px; color:var(--muted);">{{ f.count }}</span></div></sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:8px; padding:7px 11px; background:var(--surface); font-size:12px; color:var(--muted);"><i class="ph ph-funnel"></i>All platforms<i class="ph ph-caret-down"></i></div>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+          <div style="display:grid; grid-template-columns:38px 2.4fr 1.1fr 1fr 1fr 90px; gap:12px; padding:11px 18px; border-bottom:1px solid var(--border); background:var(--surface-2); font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">
+            <div><div style="width:15px; height:15px; border:1px solid var(--border-strong); border-radius:4px;"></div></div><div>Content</div><div>Platforms</div><div>Account</div><div>Schedule</div><div>Status</div>
+          </div>
+          <sc-for list="{{ postRows }}" as="p" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:38px 2.4fr 1.1fr 1fr 1fr 90px; gap:12px; padding:13px 18px; border-bottom:1px solid var(--border); align-items:center;" style-hover="background:var(--surface-2);">
+              <div style="width:15px; height:15px; border:1px solid var(--border-strong); border-radius:4px; cursor:pointer;"></div>
+              <div style="min-width:0;"><div style="font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.title }}</div><div style="font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.excerpt }}</div></div>
+              <div style="display:flex; gap:5px;"><sc-for list="{{ p.icons }}" as="ic" hint-placeholder-count="3"><i class="{{ ic.icon }}" style="font-size:16px; color:{{ ic.color }};"></i></sc-for></div>
+              <div style="font-size:12px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.account }}</div>
+              <div style="font-family:'Geist Mono',monospace; font-size:11px; color:var(--text-2);">{{ p.when }}</div>
+              <div><span style="font-size:10.5px; padding:3px 9px; border-radius:6px; background:{{ p.statusBg }}; color:{{ p.statusFg }}; white-space:nowrap;">{{ p.status }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== MEDIA LIBRARY ===== -->
+      <sc-if value="{{ r.media }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+          <sc-for list="{{ mediaFilters }}" as="f" hint-placeholder-count="4"><div style="padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer; border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-weight:{{ f.weight }};">{{ f.label }}</div></sc-for>
+          <div style="flex:1;"></div>
+          <button style="font-size:12.5px; background:var(--primary); color:var(--primary-text); border:none; border-radius:8px; padding:8px 14px; cursor:pointer; font-weight:500; display:flex; align-items:center; gap:6px;"><i class="ph ph-upload-simple"></i>Upload</button>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px;">
+          <sc-for list="{{ mediaItems }}" as="m" hint-placeholder-count="10">
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:11px; overflow:hidden; box-shadow:var(--shadow-sm); cursor:pointer;" style-hover="border-color:var(--accent-border); box-shadow:var(--shadow-md);">
+              <div style="height:140px; background:repeating-linear-gradient(135deg,var(--surface-2),var(--surface-2) 12px,var(--surface-3) 12px,var(--surface-3) 24px); display:flex; align-items:center; justify-content:center; position:relative;">
+                <i class="{{ m.icon }}" style="font-size:30px; color:var(--faint);"></i>
+                <span style="position:absolute; top:8px; left:8px; font-family:'Geist Mono',monospace; font-size:9px; padding:2px 6px; border-radius:5px; background:{{ m.badgeBg }}; color:{{ m.badgeFg }};">{{ m.badge }}</span>
+                <sc-if value="{{ m.used }}" hint-placeholder-val=""><span style="position:absolute; top:8px; right:8px; font-size:9px; padding:2px 6px; border-radius:5px; background:var(--surface); border:1px solid var(--border); color:var(--muted);">In use</span></sc-if>
+              </div>
+              <div style="padding:10px 12px;">
+                <div style="font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ m.name }}</div>
+                <div style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--muted); margin-top:3px;">{{ m.meta }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== SOCIAL ACCOUNTS ===== -->
+      <sc-if value="{{ r.accounts }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; margin-bottom:26px;">
+          <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="6">
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+              <div style="padding:15px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border);">
+                <div style="width:42px; height:42px; border-radius:10px; background:{{ a.iconBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><i class="{{ a.icon }}" style="font-size:22px; color:{{ a.color }};"></i></div>
+                <div style="flex:1; min-width:0;"><div style="font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ a.name }}</div><div style="font-size:11.5px; color:var(--muted);">{{ a.type }}</div></div>
+                <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:{{ a.statusColor }};"><span style="width:7px; height:7px; border-radius:50%; background:{{ a.statusColor }}; {{ a.pulse }}"></span>{{ a.status }}</span>
+              </div>
+              <div style="padding:13px 16px; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:var(--muted);">Route</span><span style="font-weight:500;">{{ a.provider }}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:var(--muted);">Token</span><span style="color:{{ a.tokenColor }};">{{ a.token }}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12px;"><span style="color:var(--muted);">Last publish</span><span style="font-family:'Geist Mono',monospace; font-size:11px;">{{ a.lastPub }}</span></div>
+              </div>
+              <div style="padding:11px 16px; border-top:1px solid var(--border); display:flex; gap:8px;">
+                <button style="flex:1; font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:7px; cursor:pointer; color:var(--text);">{{ a.action }}</button>
+                <button style="width:34px; border:1px solid var(--border); border-radius:7px; background:var(--surface-2); cursor:pointer; color:var(--muted);"><i class="ph ph-dots-three"></i></button>
+              </div>
+            </div>
+          </sc-for>
+          <div onClick="{{ goAccounts }}" style="border:1px dashed var(--border-strong); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; min-height:200px; cursor:pointer; color:var(--muted);" style-hover="border-color:var(--accent); color:var(--accent-ink);">
+            <i class="ph ph-plus-circle" style="font-size:28px;"></i><span style="font-size:13px; font-weight:500;">Connect account</span>
+          </div>
+        </div>
+
+        <!-- capability matrix -->
+        <div style="font-weight:600; font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;"><i class="ph ph-table" style="color:var(--accent-ink);"></i>Provider capability matrix</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow-x:auto;" class="om-scroll">
+          <div style="min-width:720px;">
+            <div style="display:grid; grid-template-columns:1.4fr repeat(6,1fr); border-bottom:1px solid var(--border); background:var(--surface-2);">
+              <div style="padding:11px 16px; font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;">Platform / Route</div>
+              <sc-for list="{{ capCols }}" as="col" hint-placeholder-count="6"><div style="padding:11px 8px; font-size:11px; font-weight:500; color:var(--muted); text-align:center;">{{ col }}</div></sc-for>
+            </div>
+            <sc-for list="{{ capRows }}" as="row" hint-placeholder-count="8">
+              <div style="display:grid; grid-template-columns:1.4fr repeat(6,1fr); border-bottom:1px solid var(--border);">
+                <div style="padding:12px 16px; display:flex; align-items:center; gap:9px; font-size:12.5px; font-weight:500;"><i class="{{ row.icon }}" style="color:{{ row.color }}; font-size:16px;"></i>{{ row.name }}<span style="font-family:'Geist Mono',monospace; font-size:9px; color:var(--faint);">{{ row.route }}</span></div>
+                <sc-for list="{{ row.caps }}" as="cap" hint-placeholder-count="6"><div style="padding:12px 8px; text-align:center;"><i class="{{ cap.icon }}" style="font-size:15px; color:{{ cap.color }};"></i></div></sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== AI PROVIDERS ===== -->
+      <sc-if value="{{ r.providers }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px;">
+        <sc-for list="{{ aiProviders }}" as="p" hint-placeholder-count="4">
+          <div style="background:var(--surface); border:1px solid {{ p.cardBorder }}; border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+            <div style="padding:16px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border);">
+              <div style="width:40px; height:40px; border-radius:10px; background:var(--surface-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center;"><i class="{{ p.icon }}" style="font-size:20px; color:{{ p.color }};"></i></div>
+              <div style="flex:1;"><div style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:7px;">{{ p.name }}<sc-if value="{{ p.default }}" hint-placeholder-val=""><span style="font-family:'Geist Mono',monospace; font-size:9px; color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent-border); padding:1px 6px; border-radius:4px;">DEFAULT</span></sc-if></div><div style="font-size:11.5px; color:var(--muted);">{{ p.endpoint }}</div></div>
+              <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:{{ p.statusColor }};"><span style="width:7px; height:7px; border-radius:50%; background:{{ p.statusColor }};"></span>{{ p.status }}</span>
+            </div>
+            <div style="padding:14px 18px;">
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;"><span style="color:var(--muted);">Model</span><span style="font-weight:500;">{{ p.model }}</span></div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;"><span style="color:var(--muted);">API key</span><span style="font-family:'Geist Mono',monospace;">{{ p.key }}</span></div>
+              <div style="font-size:11px; font-family:'Geist Mono',monospace; letter-spacing:0.06em; color:var(--faint); margin:12px 0 7px;">CAPABILITIES</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ p.caps }}" as="c" hint-placeholder-count="3"><span style="font-size:11px; padding:3px 9px; border-radius:6px; background:{{ c.bg }}; color:{{ c.fg }}; border:1px solid {{ c.border }}; display:flex; align-items:center; gap:4px;"><i class="{{ c.icon }}" style="font-size:11px;"></i>{{ c.label }}</span></sc-for>
+              </div>
+            </div>
+            <div style="padding:12px 18px; border-top:1px solid var(--border); display:flex; gap:8px;">
+              <button style="flex:1; font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:7px; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; gap:6px;"><i class="ph ph-plugs-connected"></i>Test connection</button>
+              <button style="font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:7px 12px; cursor:pointer; color:var(--text);">Configure</button>
+            </div>
+          </div>
+        </sc-for>
+        <div style="border:1px dashed var(--border-strong); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; min-height:220px; cursor:pointer; color:var(--muted);" style-hover="border-color:var(--accent); color:var(--accent-ink);">
+          <i class="ph ph-plus-circle" style="font-size:28px;"></i><span style="font-size:13px; font-weight:500;">Add provider adapter</span><span style="font-size:11px; color:var(--faint);">OpenAI-compatible endpoint</span>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== INTEGRATIONS ===== -->
+      <sc-if value="{{ r.integrations }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+        <!-- n8n -->
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+          <div style="padding:15px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;"><div style="width:34px; height:34px; border-radius:8px; background:var(--violet-soft); display:flex; align-items:center; justify-content:center;"><i class="ph ph-share-network" style="color:var(--violet); font-size:18px;"></i></div><div style="flex:1;"><div style="font-weight:600; font-size:14px;">n8n Automation</div><div style="font-size:11.5px; color:var(--muted);">Optional orchestration layer</div></div><span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--accent-ink);"><span style="width:7px; height:7px; border-radius:50%; background:var(--accent);"></span>Connected</span></div>
+          <div style="padding:16px 18px; display:flex; flex-direction:column; gap:11px;">
+            <div><div style="font-size:10.5px; font-family:'Geist Mono',monospace; color:var(--faint); margin-bottom:4px;">BASE URL</div><div style="font-size:12.5px; border:1px solid var(--border); border-radius:7px; padding:8px 11px; background:var(--surface-2); font-family:'Geist Mono',monospace;">https://n8n.mydomain.com</div></div>
+            <div><div style="font-size:10.5px; font-family:'Geist Mono',monospace; color:var(--faint); margin-bottom:4px;">WEBHOOK URL</div><div style="font-size:12px; border:1px solid var(--border); border-radius:7px; padding:8px 11px; background:var(--surface-2); font-family:'Geist Mono',monospace; display:flex; justify-content:space-between; align-items:center;">…/webhook/omnipost-in<i class="ph ph-copy" style="cursor:pointer; color:var(--muted);"></i></div></div>
+            <div style="display:flex; gap:8px; margin-top:2px;"><button style="flex:1; font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:8px; cursor:pointer; color:var(--text);"><i class="ph ph-plugs-connected"></i> Test</button><button onClick="{{ goAutomation }}" style="flex:1; font-size:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:8px; cursor:pointer; color:var(--text);">View executions</button></div>
+          </div>
+        </div>
+        <!-- API keys -->
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+          <div style="padding:15px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;"><div style="width:34px; height:34px; border-radius:8px; background:var(--blue-soft); display:flex; align-items:center; justify-content:center;"><i class="ph ph-key" style="color:var(--blue); font-size:18px;"></i></div><div style="flex:1;"><div style="font-weight:600; font-size:14px;">Content ingestion API</div><div style="font-size:11.5px; color:var(--muted);">REST · versioned · key-authenticated</div></div></div>
+          <div style="padding:14px 18px; display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{ apiKeys }}" as="k" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:11px; padding:9px 11px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);">
+                <i class="ph ph-key" style="color:var(--muted);"></i>
+                <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:500;">{{ k.label }}</div><div style="font-family:'Geist Mono',monospace; font-size:10.5px; color:var(--muted);">{{ k.key }}</div></div>
+                <span style="font-size:10.5px; color:var(--muted);">{{ k.scope }}</span>
+              </div>
+            </sc-for>
+            <button style="font-size:12px; background:var(--primary); color:var(--primary-text); border:none; border-radius:7px; padding:8px; cursor:pointer; font-weight:500; margin-top:2px;"><i class="ph ph-plus"></i> Generate key</button>
+          </div>
+        </div>
+        <!-- webhook events -->
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); grid-column:1 / -1;">
+          <div style="padding:15px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;"><i class="ph ph-webhooks-logo" style="color:var(--accent-ink); font-size:17px;"></i><span style="font-weight:600; font-size:14px;">Webhook events</span><span style="font-size:11.5px; color:var(--muted);">— outgoing events your automations can subscribe to</span></div>
+          <div style="padding:16px 18px; display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px;">
+            <sc-for list="{{ webhookEvents }}" as="e" hint-placeholder-count="8">
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);">
+                <span style="width:8px; height:8px; border-radius:50%; background:{{ e.color }}; flex-shrink:0;"></span>
+                <span style="font-family:'Geist Mono',monospace; font-size:12px; flex:1;">{{ e.name }}</span>
+                <div style="width:30px; height:17px; border-radius:20px; background:{{ e.toggleBg }}; position:relative; cursor:pointer; flex-shrink:0;"><div style="position:absolute; top:2px; {{ e.knob }}:2px; width:13px; height:13px; border-radius:50%; background:#fff;"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <!-- sample payload -->
+        <div style="background:#0e0e12; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); grid-column:1 / -1; overflow:hidden;">
+          <div style="padding:12px 18px; border-bottom:1px solid #26262b; display:flex; align-items:center; gap:8px;"><i class="ph ph-code" style="color:#10b981; font-size:16px;"></i><span style="font-weight:600; font-size:13px; color:#e4e4e7;">POST /api/v1/content · incoming payload</span><span style="margin-left:auto; font-family:'Geist Mono',monospace; font-size:10px; color:#71717a;">X-Api-Key · X-Signature</span></div>
+          <pre style="padding:16px 18px; margin:0; font-family:'Geist Mono',monospace; font-size:11.5px; line-height:1.7; color:#d4d4d8; overflow-x:auto;" class="om-scroll"><span style="color:#71717a;">{</span>
+  <span style="color:#10b981;">"source"</span>: <span style="color:#fbbf24;">"n8n"</span>,
+  <span style="color:#10b981;">"content"</span>: {
+    <span style="color:#10b981;">"topic"</span>: <span style="color:#fbbf24;">"AI and the future of web development"</span>,
+    <span style="color:#10b981;">"base_caption"</span>: <span style="color:#fbbf24;">"Original content…"</span>,
+    <span style="color:#10b981;">"focus_keyword"</span>: <span style="color:#fbbf24;">"AI web development"</span>,
+    <span style="color:#10b981;">"image_url"</span>: <span style="color:#fbbf24;">"https://example.com/image.png"</span>
+  },
+  <span style="color:#10b981;">"platforms"</span>: [<span style="color:#fbbf24;">"facebook"</span>, <span style="color:#fbbf24;">"instagram"</span>, <span style="color:#fbbf24;">"linkedin"</span>, <span style="color:#fbbf24;">"x"</span>],
+  <span style="color:#10b981;">"schedule"</span>: { <span style="color:#10b981;">"mode"</span>: <span style="color:#fbbf24;">"scheduled"</span>, <span style="color:#10b981;">"datetime"</span>: <span style="color:#fbbf24;">"2027-01-15T10:00:00"</span>, <span style="color:#10b981;">"timezone"</span>: <span style="color:#fbbf24;">"Asia/Dhaka"</span> },
+  <span style="color:#10b981;">"idempotency_key"</span>: <span style="color:#fbbf24;">"n8n-7f3a9c2e"</span>
+<span style="color:#71717a;">}</span></pre>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== AUTOMATION ===== -->
+      <sc-if value="{{ r.automation }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:20px;">
+          <sc-for list="{{ autoStats }}" as="s" hint-placeholder-count="3"><div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px 17px; box-shadow:var(--shadow-sm);"><div style="font-size:12px; color:var(--muted);">{{ s.label }}</div><div style="font-size:23px; font-weight:600; margin-top:6px;">{{ s.value }}</div></div></sc-for>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{ automations }}" as="a" hint-placeholder-count="3">
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+              <div style="padding:14px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border);">
+                <div style="width:36px; height:36px; border-radius:9px; background:{{ a.iconBg }}; display:flex; align-items:center; justify-content:center;"><i class="{{ a.icon }}" style="font-size:18px; color:{{ a.color }};"></i></div>
+                <div style="flex:1;"><div style="font-size:13.5px; font-weight:600;">{{ a.name }}</div><div style="font-size:11.5px; color:var(--muted);">{{ a.trigger }}</div></div>
+                <span style="font-size:11px; color:{{ a.statusColor }}; display:flex; align-items:center; gap:5px;"><span style="width:7px; height:7px; border-radius:50%; background:{{ a.statusColor }};"></span>{{ a.status }}</span>
+                <div style="width:38px; height:21px; border-radius:20px; background:{{ a.toggleBg }}; position:relative; cursor:pointer;"><div style="position:absolute; top:2px; {{ a.knob }}:2px; width:17px; height:17px; border-radius:50%; background:#fff;"></div></div>
+              </div>
+              <div style="padding:14px 18px; display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+                <sc-for list="{{ a.steps }}" as="st" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:center; gap:7px;">
+                    <div style="display:flex; align-items:center; gap:6px; padding:6px 11px; border-radius:8px; background:var(--surface-2); border:1px solid var(--border); font-size:11.5px;"><i class="{{ st.icon }}" style="color:{{ st.color }};"></i>{{ st.label }}</div>
+                    <sc-if value="{{ st.arrow }}" hint-placeholder-val=""><i class="ph ph-arrow-right" style="color:var(--faint); font-size:12px;"></i></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="border:1px dashed var(--border-strong); border-radius:12px; padding:16px; text-align:center; font-size:12.5px; color:var(--muted);">Complex visual editing opens in <a href="#" onClick="{{ goIntegrations }}">n8n</a>. OmniPost monitors execution & status here. <span style="color:var(--accent-ink); cursor:pointer; font-weight:500;">+ New automation</span></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== PUBLISHING LOGS ===== -->
+      <sc-if value="{{ r.logs }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap;">
+          <sc-for list="{{ logFilters }}" as="f" hint-placeholder-count="5"><div style="padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer; border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-weight:{{ f.weight }};">{{ f.label }}</div></sc-for>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); overflow:hidden;">
+          <sc-for list="{{ logs }}" as="l" hint-placeholder-count="10">
+            <div style="display:flex; align-items:flex-start; gap:13px; padding:13px 18px; border-bottom:1px solid var(--border);" style-hover="background:var(--surface-2);">
+              <div style="width:30px; height:30px; border-radius:7px; background:{{ l.iconBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;"><i class="{{ l.icon }}" style="font-size:15px; color:{{ l.color }};"></i></div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13px;"><span style="font-weight:500;">{{ l.title }}</span> <span style="color:var(--muted);">{{ l.detail }}</span></div>
+                <div style="font-size:11px; color:var(--muted); margin-top:3px; display:flex; align-items:center; gap:10px;"><span style="font-family:'Geist Mono',monospace;">{{ l.id }}</span><sc-if value="{{ l.attempt }}" hint-placeholder-val=""><span>· {{ l.attempt }}</span></sc-if><sc-if value="{{ l.url }}" hint-placeholder-val=""><span style="color:var(--accent-ink);">· {{ l.url }}</span></sc-if></div>
+              </div>
+              <span style="font-size:10.5px; padding:3px 9px; border-radius:6px; background:{{ l.badgeBg }}; color:{{ l.badgeFg }}; flex-shrink:0;">{{ l.status }}</span>
+              <span style="font-family:'Geist Mono',monospace; font-size:10.5px; color:var(--faint); flex-shrink:0; margin-top:3px;">{{ l.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== ANALYTICS ===== -->
+      <sc-if value="{{ r.analytics }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1180px; margin:0 auto;">
+        <div style="background:var(--amber-soft); border:1px solid rgba(217,119,6,0.22); border-radius:10px; padding:11px 15px; display:flex; align-items:center; gap:9px; margin-bottom:18px; font-size:12.5px; color:var(--amber);"><i class="ph ph-info"></i>Metrics shown only where the connected platform exposes them. OmniPost never fabricates reach or engagement.</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:18px;">
+          <sc-for list="{{ analyticsStats }}" as="s" hint-placeholder-count="4"><div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; box-shadow:var(--shadow-sm);"><div style="font-size:12px; color:var(--muted);">{{ s.label }}</div><div style="font-size:25px; font-weight:600; margin-top:7px;">{{ s.value }}</div><div style="font-size:11.5px; color:var(--muted); margin-top:3px;">{{ s.sub }}</div></div></sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start;">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:16px 18px;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:14px;">Posts per platform</div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{ platformBars }}" as="b" hint-placeholder-count="6">
+                <div><div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;"><span style="display:flex; align-items:center; gap:7px;"><i class="{{ b.icon }}" style="color:{{ b.color }};"></i>{{ b.name }}</span><span style="font-family:'Geist Mono',monospace; color:var(--text-2);">{{ b.count }}</span></div><div style="height:8px; background:var(--surface-2); border-radius:5px; overflow:hidden;"><div style="height:100%; width:{{ b.pct }}; background:{{ b.color }}; border-radius:5px; transform-origin:left; animation:om-bar 0.6s ease;"></div></div></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+            <div style="padding:14px 18px; border-bottom:1px solid var(--border); font-weight:600; font-size:14px;">Recent published URLs</div>
+            <sc-for list="{{ publishedUrls }}" as="u" hint-placeholder-count="5">
+              <div style="padding:11px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;"><i class="{{ u.icon }}" style="font-size:16px; color:{{ u.color }};"></i><div style="flex:1; min-width:0;"><div style="font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ u.title }}</div><div style="font-family:'Geist Mono',monospace; font-size:10.5px; color:var(--accent-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ u.url }}</div></div><i class="ph ph-arrow-square-out" style="color:var(--muted); cursor:pointer;"></i></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== SETTINGS ===== -->
+      <sc-if value="{{ r.settings }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
+        <sc-for list="{{ settingGroups }}" as="g" hint-placeholder-count="4">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm);">
+            <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;"><i class="{{ g.icon }}" style="color:var(--accent-ink); font-size:16px;"></i><span style="font-weight:600; font-size:14px;">{{ g.title }}</span></div>
+            <sc-for list="{{ g.rows }}" as="row" hint-placeholder-count="3">
+              <div style="padding:13px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px;">
+                <div style="flex:1;"><div style="font-size:13px; font-weight:500;">{{ row.label }}</div><div style="font-size:11.5px; color:var(--muted); margin-top:2px;">{{ row.desc }}</div></div>
+                <div style="font-size:12.5px; color:var(--text-2); display:flex; align-items:center; gap:8px;">{{ row.value }}<sc-if value="{{ row.toggle }}" hint-placeholder-val=""><div style="width:38px; height:21px; border-radius:20px; background:{{ row.toggleBg }}; position:relative; cursor:pointer;"><div style="position:absolute; top:2px; {{ row.knob }}:2px; width:17px; height:17px; border-radius:50%; background:#fff;"></div></div></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- ===== ARCHITECTURE ===== -->
+      <sc-if value="{{ r.architecture }}" hint-placeholder-val="">
+      <div class="om-screen" style="max-width:1100px; margin:0 auto;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:22px 24px; margin-bottom:18px;">
+          <div style="font-weight:600; font-size:15px; margin-bottom:5px;">Create Anywhere → Send to OmniPost → Publish Everywhere</div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:20px;">Provider-independent ingestion & publishing. Every source enters one pipeline; every account receives platform-specific content via its configured connector.</div>
+          <div style="display:flex; align-items:stretch; gap:10px; overflow-x:auto; padding-bottom:6px;" class="om-scroll">
+            <sc-for list="{{ archFlow }}" as="col" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="min-width:150px; border:1px solid {{ col.border }}; background:{{ col.bg }}; border-radius:10px; padding:13px; display:flex; flex-direction:column; gap:8px;">
+                  <div style="font-family:'Geist Mono',monospace; font-size:9.5px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase;">{{ col.stage }}</div>
+                  <sc-for list="{{ col.nodes }}" as="n" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:7px; font-size:12px; padding:7px 9px; background:var(--surface); border:1px solid var(--border); border-radius:7px;"><i class="{{ n.icon }}" style="color:{{ n.color }}; font-size:14px;"></i>{{ n.label }}</div></sc-for>
+                </div>
+                <sc-if value="{{ col.arrow }}" hint-placeholder-val=""><i class="ph-bold ph-arrow-right" style="color:var(--faint); font-size:18px;"></i></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:18px 20px;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:13px; display:flex; align-items:center; gap:8px;"><i class="ph ph-stack" style="color:var(--accent-ink);"></i>Mandated stack</div>
+            <div style="display:flex; flex-direction:column; gap:9px;">
+              <sc-for list="{{ stackLayers }}" as="l" hint-placeholder-count="6"><div style="display:flex; gap:11px; align-items:flex-start;"><span style="font-family:'Geist Mono',monospace; font-size:10px; color:var(--accent-ink); background:var(--accent-soft); border:1px solid var(--accent-border); padding:2px 7px; border-radius:5px; white-space:nowrap; margin-top:1px;">{{ l.tag }}</span><span style="font-size:12.5px; color:var(--text-2); line-height:1.5;">{{ l.detail }}</span></div></sc-for>
+            </div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:18px 20px;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:13px; display:flex; align-items:center; gap:8px;"><i class="ph ph-shield-check" style="color:var(--accent-ink);"></i>Reliability & security</div>
+            <div style="display:flex; flex-direction:column; gap:9px;">
+              <sc-for list="{{ reliabilityPoints }}" as="p" hint-placeholder-count="6"><div style="display:flex; gap:9px; align-items:flex-start; font-size:12.5px; color:var(--text-2); line-height:1.5;"><i class="ph-bold ph-check-circle" style="color:var(--accent); font-size:15px; margin-top:1px; flex-shrink:0;"></i>{{ p }}</div></sc-for>
+            </div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-sm); padding:18px 20px; grid-column:1 / -1;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:13px; display:flex; align-items:center; gap:8px;"><i class="ph ph-database" style="color:var(--accent-ink);"></i>Core data model · one idea → many platform posts</div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+              <sc-for list="{{ entities }}" as="e" hint-placeholder-count="12"><span style="font-family:'Geist Mono',monospace; font-size:11px; padding:4px 10px; border-radius:6px; background:{{ e.bg }}; color:{{ e.fg }}; border:1px solid {{ e.border }};">{{ e.name }}</span></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = { route:'dashboard', theme:'light', activePlatform:'facebook', generating:false, generated:true };
+
+  go(route){ return () => this.setState({ route }); }
+  componentDidMount(){ this._boot = true; }
+
+  toggleTheme(){ this.setState(s => ({ theme: s.theme==='light' ? 'dark' : 'light' })); }
+
+  // icon helpers
+  pIcon(p){ return ({facebook:'ph ph-facebook-logo', instagram:'ph ph-instagram-logo', linkedin:'ph ph-linkedin-logo', x:'ph ph-x-logo', youtube:'ph ph-youtube-logo', pinterest:'ph ph-pinterest-logo', tiktok:'ph ph-tiktok-logo', threads:'ph ph-threads-logo', telegram:'ph ph-telegram-logo', reddit:'ph ph-reddit-logo'})[p]; }
+  pColor(p){ return ({facebook:'#2563eb', instagram:'#db2777', linkedin:'#0a66c2', x:'var(--text)', youtube:'#dc2626', pinterest:'#e60023', tiktok:'var(--text)', threads:'var(--text)', telegram:'#229ed9', reddit:'#ff4500'})[p]; }
+
+  renderVals(){
+    const dark = this.state.theme === 'dark';
+    const route = this.state.route;
+    const R = k => route === k;
+    const r = {
+      dashboard:R('dashboard'), studio:R('studio'), image:R('image'), planner:R('planner'),
+      calendar:R('calendar'), posts:['posts','scheduled','published','drafts'].includes(route),
+      media:R('media'), accounts:R('accounts'), providers:R('providers'),
+      integrations:R('integrations'), automation:R('automation'), logs:R('logs'),
+      analytics:R('analytics'), settings:R('settings'), architecture:R('architecture')
+    };
+
+    const nav = [
+      { title:'Overview', items:[['dashboard','Dashboard','ph ph-squares-four']] },
+      { title:'Create', items:[['studio','AI Content Studio','ph ph-sparkle'],['image','AI Image Studio','ph ph-image'],['planner','Content Planner','ph ph-stack']] },
+      { title:'Schedule', items:[['calendar','Content Calendar','ph ph-calendar-dots'],['posts','All Posts','ph ph-cards'],['scheduled','Scheduled','ph ph-clock'],['published','Published','ph ph-check-circle'],['drafts','Drafts','ph ph-note-pencil']] },
+      { title:'Assets', items:[['media','Media Library','ph ph-images']] },
+      { title:'Connections', items:[['accounts','Social Accounts','ph ph-users-three'],['providers','AI Providers','ph ph-brain'],['integrations','Integrations','ph ph-plugs'],['automation','Automation','ph ph-robot']] },
+      { title:'Monitor', items:[['logs','Publishing Logs','ph ph-list-checks'],['analytics','Analytics','ph ph-chart-bar']] },
+      { title:'System', items:[['settings','Settings','ph ph-gear'],['architecture','Architecture','ph ph-blueprint']] },
+    ];
+    const badges = { posts:'128', scheduled:'34', drafts:'11', accounts:'6' };
+    const badgeTone = { scheduled:true, drafts:true };
+    const navSections = nav.map(sec => ({ title:sec.title, items: sec.items.map(([id,label,icon]) => {
+      const active = route === id;
+      return { label, icon, go:this.go(id),
+        bg: active ? 'var(--surface-2)' : 'transparent',
+        fg: active ? 'var(--text)' : 'var(--text-2)',
+        iconColor: active ? 'var(--accent-ink)' : 'var(--muted)',
+        weight: active ? 600 : 450,
+        badge: badges[id] || '',
+        badgeBg: badgeTone[id] ? 'var(--accent-soft)' : 'var(--surface-3)',
+        badgeFg: badgeTone[id] ? 'var(--accent-ink)' : 'var(--muted)' };
+    })}));
+
+    const titles = {
+      dashboard:['Dashboard','Your publishing command center','', ],
+      studio:['AI Content Studio','Generate platform-ready content from any provider','AI'],
+      image:['AI Image Studio','Generate, edit & optimize visuals with SEO metadata','AI'],
+      planner:['Content Planner','Bulk-generate and schedule weeks ahead',''],
+      calendar:['Content Calendar','Every scheduled & published post in one view',''],
+      posts:['All Posts','Every content item across platforms',''],
+      scheduled:['Scheduled Posts','Queued for publishing',''],
+      published:['Published Posts','Successfully delivered',''],
+      drafts:['Drafts','Saved, not yet scheduled',''],
+      media:['Media Library','Generated & uploaded assets',''],
+      accounts:['Social Accounts','Connections, routes & capability matrix',''],
+      providers:['AI Providers','Pluggable provider adapters',''],
+      integrations:['Integrations','n8n, webhooks & the ingestion API',''],
+      automation:['Automation','Visual rules & execution monitoring',''],
+      logs:['Publishing Logs','Attempts, retries & recovery',''],
+      analytics:['Analytics','Real metrics only — never fabricated',''],
+      settings:['Settings','Platform configuration',''],
+      architecture:['System Architecture','Phase 1 — production-oriented blueprint',''],
+    };
+    const t = titles[route] || titles.dashboard;
+
+    // dashboard
+    const stats = [
+      ['Connected accounts','6','+2 this month','ph ph-users-three','var(--blue)','ph ph-arrow-up','var(--accent-ink)'],
+      ['Scheduled','34','next in 2h','ph ph-clock','var(--accent)','ph ph-clock','var(--muted)'],
+      ['Published (30d)','212','98.1% success','ph ph-check-circle','var(--accent)','ph ph-arrow-up','var(--accent-ink)'],
+      ['Pending approval','7','needs review','ph ph-hourglass-medium','var(--amber)','ph ph-dot','var(--amber)'],
+      ['Failed (30d)','4','2 recoverable','ph ph-warning','var(--red)','ph ph-arrow-down','var(--red)'],
+      ['Drafts','11','3 AI-generated','ph ph-note-pencil','var(--muted)','ph ph-dot','var(--muted)'],
+    ].map(([label,value,delta,icon,color,deltaIcon,deltaColor]) => ({label,value,delta,icon,color,deltaIcon,deltaColor}));
+
+    const upcoming = [
+      ['The future of AI in WordPress development','facebook','Facebook: Dev Insights · +2','10:00','Jan 15'],
+      ['5 automations that save 10 hours a week','linkedin','LinkedIn: Company Page','14:30','Jan 15'],
+      ['Quick tip: headless CMS in 2027','x','X: @devinsights','19:00','Jan 15'],
+      ['Behind the build — our new design system','instagram','Instagram: @studio','09:00','Jan 16'],
+    ].map(([title,p,accounts,time,date]) => ({title,accounts,time,date,icon:this.pIcon(p),color:this.pColor(p)}));
+
+    const activity = [['Mon',70,55],['Tue',88,72],['Wed',45,30],['Thu',100,90],['Fri',62,48],['Sat',38,22],['Sun',75,60]]
+      .map(([day,h,fill]) => ({day, h:h+'%', fill:fill+'%'}));
+
+    const quickActions = [
+      ['Create post','ph ph-pencil-simple-line','studio'],['Generate AI','ph ph-sparkle','studio'],
+      ['Generate image','ph ph-image','image'],['Content plan','ph ph-stack','planner'],
+      ['Schedule','ph ph-calendar-plus','calendar'],['Connect','ph ph-plugs','accounts'],
+    ].map(([label,icon,go]) => ({label,icon,go:this.go(go)}));
+
+    const healthAccounts = [
+      ['facebook','Dev Insights','Meta Graph API','Healthy','var(--accent)'],
+      ['instagram','@studio.visuals','Token expires in 3d','Warning','var(--amber)'],
+      ['linkedin','Company Page','Direct API','Healthy','var(--accent)'],
+      ['x','@devinsights','Rate-limited','Degraded','var(--red)'],
+    ].map(([p,name,detail,status,statusColor]) => ({name,detail,status,statusColor,icon:this.pIcon(p),color:this.pColor(p)}));
+
+    // content studio variations
+    const varData = {
+      facebook:{ name:'Facebook', account:'Dev Insights', limit:'63,206', chars:412,
+        headline:'AI is quietly rewriting how we build WordPress sites',
+        caption:"Here's what changed in the last 12 months — and why it matters for anyone shipping on WordPress.\n\nAI-assisted scaffolding, content generation, and automated QA are no longer experiments. They're in production. The teams moving fastest treat AI as a teammate, not a toy.\n\nWhat's one task you'd hand off first? 👇",
+        cta:'Drop your answer in the comments', alt:'Developer workspace with WordPress dashboard, soft daylight',
+        imgSize:'1200 × 630', tags:['#AIWebDev','#WordPress','#WebDevelopment','#DevTools','#Automation'] },
+      instagram:{ name:'Instagram', account:'@studio.visuals', limit:'2,200', chars:328,
+        headline:'The AI + WordPress shift, in one carousel',
+        caption:"Swipe → the 5 ways AI is changing WordPress builds in 2027.\n\nFrom scaffolding to QA, the workflow looks different now. Save this for your next project. ✨",
+        cta:'Save & share with your team', alt:'Minimal flatlay of a laptop showing WordPress admin',
+        imgSize:'1080 × 1080', tags:['#webdev','#wordpress','#aitools','#buildinpublic','#design'] },
+      linkedin:{ name:'LinkedIn', account:'Company Page', limit:'3,000', chars:564,
+        headline:'The future of AI in WordPress development',
+        caption:"Over the past year, AI moved from novelty to infrastructure in our WordPress workflow.\n\nThree concrete shifts we've measured:\n\n1. Scaffolding time down ~40%\n2. Content drafts generated in minutes, refined by humans\n3. Automated accessibility & QA checks on every PR\n\nThe takeaway isn't \"AI replaces developers.\" It's that teams who build the right guardrails ship more, with higher quality.",
+        cta:'How is your team adopting AI? Let\'s compare notes.', alt:'Professional editorial image of a modern dev team',
+        imgSize:'1200 × 627', tags:['#AI','#WordPress','#SoftwareEngineering','#WebDevelopment'] },
+      x:{ name:'X / Twitter', account:'@devinsights', limit:'280', chars:214,
+        headline:'AI × WordPress, 2027',
+        caption:"AI in WordPress dev isn't hype anymore:\n\n→ scaffolding -40%\n→ content drafts in minutes\n→ automated a11y + QA on every PR\n\nIt's a teammate, not a toy.",
+        cta:'What would you automate first?', alt:'Code editor with AI assistant panel',
+        imgSize:'1600 × 900', tags:['#AI','#WordPress','#WebDev'] },
+      threads:{ name:'Threads', account:'@devinsights', limit:'500', chars:188,
+        headline:'AI is now part of the WordPress stack',
+        caption:"Been using AI across our WordPress builds all year. The honest take: it's a force multiplier when you add guardrails, a mess when you don't.\n\nWhere's it actually helping you?",
+        cta:'Reply with your workflow', alt:'Casual shot of a developer desk',
+        imgSize:'1080 × 1350', tags:['#webdev','#ai','#wordpress'] },
+    };
+    const platformsOrder = ['facebook','instagram','linkedin','x','threads'];
+    const ap = this.state.activePlatform;
+    const varTabs = platformsOrder.map(p => ({ name:varData[p].name, icon:this.pIcon(p), go:()=>this.setState({activePlatform:p}),
+      border: ap===p ? 'var(--accent-border)':'var(--border)', bg: ap===p ? 'var(--accent-soft)':'var(--surface)',
+      fg: ap===p ? 'var(--accent-ink)':'var(--text-2)', weight: ap===p?600:450 }));
+    const av = varData[ap];
+    const overLimit = String(av.limit).replace(/,/g,'')*1 < av.chars;
+    const activeVar = { ...av, color:this.pColor(ap), icon:this.pIcon(ap), tagCount:av.tags.length,
+      limitColor: overLimit ? 'var(--red)' : 'var(--muted)', schedule:'Jan 15, 2027 · 10:00 · Asia/Dhaka' };
+
+    const platformChips = ['facebook','instagram','linkedin','x','threads'].map(p => ({
+      name:varData[p]?varData[p].name.split(' ')[0]:p, icon:this.pIcon(p),
+      border:'var(--accent-border)', bg:'var(--accent-soft)', fg:'var(--accent-ink)' }));
+
+    const rewriteActions = [['Regenerate','ph ph-arrows-clockwise'],['Shorten','ph ph-arrows-in-line-horizontal'],['Change tone','ph ph-sliders'],['Translate','ph ph-translate'],['Edit','ph ph-pencil-simple']].map(([label,icon])=>({label,icon}));
+
+    // image studio
+    const imgTools = [['Regenerate','ph ph-arrows-clockwise'],['Crop','ph ph-crop'],['Resize','ph ph-arrows-out'],['Compress','ph ph-file-zip'],['Download','ph ph-download-simple']].map(([label,icon])=>({label,icon}));
+    const imgPresets = [
+      ['Instagram Square','1080×1080','instagram'],['Instagram Portrait','1080×1350','instagram'],['Instagram Story','1080×1920','instagram'],
+      ['Facebook Feed','1200×630','facebook'],['LinkedIn Feed','1200×627','linkedin'],['X Feed','1600×900','x'],
+      ['Pinterest','1000×1500','pinterest'],['YouTube Thumb','1280×720','youtube'],
+    ].map(([name,dims,p],i) => ({name,dims,icon:this.pIcon(p),color:this.pColor(p), border: i===0?'var(--accent-border)':'var(--border)', bg: i===0?'var(--accent-soft)':'var(--surface-2)'}));
+    const imgMeta = [
+      ['SEO FILENAME','ai-wordpress-development-2027.webp'],['IMAGE TITLE','AI in WordPress Development'],
+      ['ALT TEXT','Developer workspace with WordPress dashboard in soft daylight'],
+      ['FOCUS KEYWORD','AI web development'],['FORMAT / SIZE','WebP · 1080×1080 · 184 KB'],['PROVIDER','OpenAI DALL·E 3'],
+    ].map(([label,value])=>({label,value}));
+
+    // planner
+    const horizons = ['30 Days','60 Days','90 Days','6 Months','1 Year','Custom'].map((label,i)=>({label, go:()=>{}, border:i===0?'var(--accent-border)':'var(--border)', bg:i===0?'var(--accent-soft)':'var(--surface-2)', fg:i===0?'var(--accent-ink)':'var(--text-2)', weight:i===0?600:450}));
+    const weekDays = ['M','T','W','T','F','S','S'].map((label,i)=>({label, border:i<5?'var(--accent-border)':'var(--border)', bg:i<5?'var(--accent-soft)':'var(--surface-2)', fg:i<5?'var(--accent-ink)':'var(--muted)'}));
+    const plannerItems = [
+      ['01','Why headless WordPress wins in 2027','Education','FB · LI · X','Jan 15 · 09:00','Ready'],
+      ['02','5 AI tools every WP developer needs','Listicle','IG · FB · Threads','Jan 16 · 09:00','Ready'],
+      ['03','Case study: 40% faster builds with AI','Case study','LI · X','Jan 17 · 14:30','Ready'],
+      ['04','Quick tip: automate your deploys','Tip','X · Threads','Jan 18 · 19:00','Ready'],
+      ['05','The anatomy of a great CMS','Education','FB · LI','Jan 19 · 09:00','Review'],
+      ['06','Behind the scenes: our stack','BTS','IG · Threads','Jan 20 · 09:00','Ready'],
+      ['07','Poll: AI in your workflow?','Engagement','X · FB','Jan 21 · 12:00','Ready'],
+    ].map(([num,title,category,platforms,when,status]) => ({num,title,category,platforms,when,status, statusBg: status==='Review'?'var(--amber-soft)':'var(--accent-soft)', statusFg: status==='Review'?'var(--amber)':'var(--accent-ink)'}));
+
+    // calendar
+    const calViews = ['Month','Week','Day','List','Timeline'].map((label,i)=>({label, weight:i===0?600:450, bg:i===0?'var(--surface)':'transparent', fg:i===0?'var(--text)':'var(--muted)'}));
+    const dayHeaders = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const calEvents = {
+      '1':[['x','Tip thread','s']], '3':[['linkedin','Case study','p'],['facebook','Weekly post','s']],
+      '6':[['instagram','Carousel','s']], '8':[['facebook','AI post','p'],['x','Quick tip','p']],
+      '10':[['linkedin','Authority','pending']], '13':[['instagram','Story','s']],
+      '15':[['facebook','Feature','s'],['linkedin','Long-form','s'],['x','Thread','s']],
+      '16':[['instagram','BTS','s']], '18':[['x','Deploy tip','s']],
+      '20':[['instagram','Stack post','pending']], '22':[['linkedin','Poll','s']],
+      '24':[['facebook','Recap','p']], '27':[['x','Hot take','s']], '29':[['instagram','Teaser','s']],
+    };
+    const eColor = { s:['var(--accent-soft)','var(--accent-ink)'], p:['var(--blue-soft)','var(--blue)'], pending:['var(--amber-soft)','var(--amber)'] };
+    const calCells = [];
+    for(let i=0;i<35;i++){
+      const dayNum = i-2; const inMonth = dayNum>=1 && dayNum<=31; const isToday = dayNum===15;
+      const evs = (calEvents[String(dayNum)]||[]).map(([p,label,tone])=>({label, icon:this.pIcon(p), bg:eColor[tone][0], fg:eColor[tone][1]}));
+      calCells.push({ day: inMonth ? dayNum : (dayNum<1 ? 29+dayNum : dayNum-31), posts:evs,
+        bg: isToday ? 'var(--accent-soft)' : (inMonth ? 'var(--surface)' : 'var(--surface-2)'),
+        dayColor: inMonth ? (isToday?'var(--accent-ink)':'var(--text)') : 'var(--faint)', dayWeight: isToday?700:500 });
+    }
+
+    // posts
+    const postStatusMap = { scheduled:['Scheduled','var(--accent-soft)','var(--accent-ink)'], published:['Published','var(--blue-soft)','var(--blue)'], draft:['Draft','var(--surface-3)','var(--muted)'], approval:['Pending','var(--amber-soft)','var(--amber)'], failed:['Failed','var(--red-soft)','var(--red)'] };
+    const allPosts = [
+      ['The future of AI in WordPress development','AI is quietly rewriting how we build…',['facebook','linkedin','x'],'Dev Insights','Jan 15 · 10:00','scheduled'],
+      ['5 automations that save 10 hours a week','A practical breakdown of the workflows…',['linkedin'],'Company Page','Jan 15 · 14:30','scheduled'],
+      ['Quick tip: headless CMS in 2027','Why we moved and what we learned…',['x','threads'],'@devinsights','Jan 14 · 19:00','published'],
+      ['Behind the build — new design system','A look at the tokens and components…',['instagram'],'@studio.visuals','Jan 13 · 09:00','published'],
+      ['Weekly roundup: dev tooling','The five tools we actually kept using…',['facebook','linkedin'],'Dev Insights','—','draft'],
+      ['Poll: how do you use AI?','Curious where everyone lands on this…',['x','facebook'],'@devinsights','Jan 16 · 12:00','approval'],
+      ['Case study: 40% faster builds','The real numbers behind the claim…',['linkedin','x'],'Company Page','Jan 12 · 14:30','failed'],
+      ['Headless WordPress, explained','Everything you need to get started…',['facebook','instagram','linkedin'],'Dev Insights','Jan 17 · 09:00','scheduled'],
+    ];
+    const postFilterDefs = [['posts','All','128'],['scheduled','Scheduled','34'],['published','Published','83'],['drafts','Drafts','11'],['approval','Pending','7']];
+    const postFilters = postFilterDefs.map(([id,label,count]) => {
+      const active = route===id || (route==='posts'&&id==='posts');
+      return { label, count, border:active?'var(--accent-border)':'var(--border)', bg:active?'var(--accent-soft)':'var(--surface)', fg:active?'var(--accent-ink)':'var(--text-2)', weight:active?600:450 };
+    });
+    const routeFilter = { scheduled:'scheduled', published:'published', drafts:'draft' }[route];
+    const postRows = allPosts.filter(p => !routeFilter || p[5]===routeFilter).map(([title,excerpt,icons,account,when,st]) => {
+      const sm = postStatusMap[st];
+      return { title, excerpt, account, when, icons:icons.map(p=>({icon:this.pIcon(p),color:this.pColor(p)})), status:sm[0], statusBg:sm[1], statusFg:sm[2] };
+    });
+
+    // media
+    const mediaFilters = ['All media','Generated','Uploaded','Unused'].map((label,i)=>({label, border:i===0?'var(--accent-border)':'var(--border)', bg:i===0?'var(--accent-soft)':'var(--surface)', fg:i===0?'var(--accent-ink)':'var(--text-2)', weight:i===0?600:450}));
+    const mediaItems = [
+      ['ai-wordpress-hero.webp','AI','Gen','1080×1080 · 184KB','ph ph-image',true],
+      ['automation-flow.webp','AI','Gen','1200×630 · 210KB','ph ph-image',true],
+      ['team-photo.jpg','UP','Upload','1600×900 · 420KB','ph ph-image',false],
+      ['product-demo.mp4','VID','Video','1080p · 12MB','ph ph-video',true],
+      ['design-system.webp','AI','Gen','1080×1350 · 240KB','ph ph-image',false],
+      ['headless-cms.webp','AI','Gen','1200×627 · 198KB','ph ph-image',true],
+      ['desk-flatlay.jpg','UP','Upload','2000×1333 · 680KB','ph ph-image',false],
+      ['logo-mark.png','UP','Upload','512×512 · 24KB','ph ph-image',true],
+      ['tutorial-thumb.webp','AI','Gen','1280×720 · 156KB','ph ph-image',false],
+      ['stack-diagram.webp','AI','Gen','1600×900 · 288KB','ph ph-image',true],
+    ].map(([name,badge,type,meta,icon,used]) => ({name,meta,icon,used, badge, badgeBg: badge==='AI'?'var(--accent)':badge==='VID'?'var(--violet)':'var(--surface-3)', badgeFg: badge==='UP'?'var(--muted)':'#fff'}));
+
+    // accounts
+    const accounts = [
+      ['facebook','Dev Insights','Facebook Page','Healthy','var(--accent)','Direct · Meta Graph','Valid · 58d','2h ago','Reconnect',''],
+      ['facebook','Studio Updates','Facebook Page','Healthy','var(--accent)','Publishing Provider','Valid · 58d','1d ago','Reconnect',''],
+      ['instagram','@studio.visuals','Instagram Professional','Warning','var(--amber)','Direct · Meta Graph','Expires 3d','5h ago','Reconnect','animation:om-pulse 2s infinite;'],
+      ['linkedin','Company Page','LinkedIn Page','Healthy','var(--accent)','Direct · LinkedIn API','Valid · 90d','3h ago','Reconnect',''],
+      ['x','@devinsights','X / Twitter','Degraded','var(--red)','Publishing Provider','Rate-limited','1d ago','Review','animation:om-pulse 2s infinite;'],
+      ['linkedin','Personal Profile','LinkedIn Profile','Healthy','var(--accent)','Direct · LinkedIn API','Valid · 90d','6h ago','Reconnect',''],
+    ].map(([p,name,type,status,statusColor,provider,token,lastPub,action,pulse]) => ({
+      name,type,status,statusColor,provider,token,lastPub,action,pulse,
+      icon:this.pIcon(p), color:this.pColor(p), iconBg:'var(--surface-2)',
+      tokenColor: token.includes('Expires')||token.includes('Rate')?'var(--amber)':'var(--text)' }));
+
+    const yes = { icon:'ph-bold ph-check', color:'var(--accent)' };
+    const no = { icon:'ph ph-minus', color:'var(--faint)' };
+    const partial = { icon:'ph-bold ph-check', color:'var(--amber)' };
+    const capCols = ['Text','Image','Video','Carousel','Schedule','Status'];
+    const capRows = [
+      ['facebook','Meta Graph',[1,1,1,1,1,1]],['instagram','Meta Graph',[1,1,1,1,1,1]],
+      ['linkedin','LinkedIn API',[1,1,1,0,1,1]],['x','Provider',[1,1,1,0,2,2]],
+      ['youtube','YouTube API',[0,0,1,0,1,1]],['pinterest','Provider',[1,1,0,0,1,2]],
+      ['threads','Meta Graph',[1,1,0,1,1,0]],['tiktok','Provider',[0,0,1,0,2,2]],
+    ].map(([p,routeName,caps]) => ({ name:this.pName(p), route:'· '+routeName, icon:this.pIcon(p), color:this.pColor(p),
+      caps: caps.map(c => c===1?yes:c===2?partial:no) }));
+
+    // ai providers
+    const aiProviders = [
+      ['OpenAI','ph ph-circle-half','#10a37f','api.openai.com/v1','GPT-4o','sk-••••7a2f','Connected','var(--accent)',true,[['Text','ph ph-text-aa'],['Images','ph ph-image'],['Structured','ph ph-brackets-curly']]],
+      ['Anthropic Claude','ph ph-asterisk','#d97757','api.anthropic.com','Sonnet 4.5','sk-ant-••••9c','Connected','var(--accent)',false,[['Text','ph ph-text-aa'],['Structured','ph ph-brackets-curly'],['Long context','ph ph-arrows-out-line-horizontal']]],
+      ['Google Gemini','ph ph-diamond','#4285f4','generativelanguage…','Gemini 2.0','AIza••••4b','Connected','var(--accent)',false,[['Text','ph ph-text-aa'],['Images','ph ph-image'],['Multimodal','ph ph-stack']]],
+      ['Custom Endpoint','ph ph-plug','var(--muted)','self-hosted · OpenAI-compat','llama-3.1-70b','—','Not tested','var(--muted)',false,[['Text','ph ph-text-aa']]],
+    ].map(([name,icon,color,endpoint,model,key,status,statusColor,def,caps]) => ({
+      name,icon,color,endpoint,model,key,status,statusColor,default:def,
+      cardBorder: def ? 'var(--accent-border)' : 'var(--border)',
+      caps: caps.map(([label,ci]) => ({label, icon:ci, bg:'var(--surface-2)', fg:'var(--text-2)', border:'var(--border)'})) }));
+
+    // integrations
+    const apiKeys = [
+      ['Production ingestion key','opk_live_••••••••3f7a','content:write'],
+      ['n8n service key','opk_n8n_••••••••9c2e','content:write, publish'],
+      ['Read-only status key','opk_ro_••••••••1b44','status:read'],
+    ].map(([label,key,scope])=>({label,key,scope}));
+    const webhookEvents = [
+      ['content.created','var(--accent)',true],['content.updated','var(--accent)',true],['content.approved','var(--accent)',true],
+      ['content.scheduled','var(--accent)',true],['content.published','var(--blue)',true],['content.failed','var(--red)',true],
+      ['image.generated','var(--violet)',false],['account.disconnected','var(--amber)',true],
+    ].map(([name,color,on]) => ({ name, color, toggleBg: on?'var(--accent)':'var(--surface-3)', knob: on?'right':'left' }));
+
+    // automation
+    const autoStats = [['Active automations','4'],['Executions (7d)','38'],['Success rate','97.4%']].map(([label,value])=>({label,value}));
+    const automations = [
+      ['Weekly content engine','ph ph-calendar-check','var(--accent-soft)','var(--accent-ink)','Every Monday · 09:00','Running','var(--accent)',true,
+        [['Generate idea','ph ph-lightbulb','var(--amber)',1],['Platform posts','ph ph-copy','var(--blue)',1],['Images','ph ph-image','var(--violet)',1],['Save drafts','ph ph-note','var(--muted)',1],['Await approval','ph ph-hourglass','var(--amber)',0]]],
+      ['n8n → OmniPost intake','ph ph-share-network','var(--violet-soft)','var(--violet)','Webhook · on receive','Running','var(--accent)',true,
+        [['Validate payload','ph ph-shield-check','var(--accent)',1],['Create content','ph ph-plus-circle','var(--blue)',1],['Schedule','ph ph-calendar-plus','var(--accent-ink)',0]]],
+      ['Daily publish queue','ph ph-paper-plane-tilt','var(--blue-soft)','var(--blue)','Every day · continuous','Paused','var(--muted)',false,
+        [['Fetch due','ph ph-clock','var(--muted)',1],['Validate account','ph ph-user-check','var(--accent)',1],['Publish','ph ph-paper-plane-right','var(--blue)',1],['Record','ph ph-list-checks','var(--muted)',0]]],
+    ].map(([name,icon,iconBg,color,trigger,status,statusColor,on,steps]) => ({
+      name,icon,iconBg,color,trigger,status,statusColor, toggleBg: on?'var(--accent)':'var(--surface-3)', knob: on?'right':'left',
+      steps: steps.map(([label,si,sc,hasArrow],idx) => ({label, icon:si, color:sc, arrow: idx < steps.length-1})) }));
+
+    // logs
+    const logFilters = ['All','Published','Failed','Retried','Scheduled'].map((label,i)=>({label, border:i===0?'var(--accent-border)':'var(--border)', bg:i===0?'var(--accent-soft)':'var(--surface)', fg:i===0?'var(--accent-ink)':'var(--text-2)', weight:i===0?600:450}));
+    const logs = [
+      ['Published to LinkedIn','— Company Page','ph-bold ph-check','var(--accent-soft)','var(--accent)','job_9f3a2c','','linkedin.com/posts/…','Published','var(--accent-soft)','var(--accent-ink)','2m ago'],
+      ['Published to Facebook','— Dev Insights','ph-bold ph-check','var(--accent-soft)','var(--accent)','job_9f3a2b','','fb.com/devinsights/…','Published','var(--accent-soft)','var(--accent-ink)','8m ago'],
+      ['Retry succeeded on X','— @devinsights, attempt 2','ph ph-arrows-clockwise','var(--blue-soft)','var(--blue)','job_8e1d44','exponential backoff +32s','x.com/devinsights/…','Recovered','var(--blue-soft)','var(--blue)','31m ago'],
+      ['Publishing failed on Instagram','— token expired','ph-bold ph-x','var(--red-soft)','var(--red)','job_8d9a01','moved to dead-letter queue','','Failed','var(--red-soft)','var(--red)','1h ago'],
+      ['Rate limit hit on X','— waiting for window','ph ph-clock-countdown','var(--amber-soft)','var(--amber)','job_8c22f0','retry scheduled 14:05','','Deferred','var(--amber-soft)','var(--amber)','1h ago'],
+      ['Content ingested from n8n','— idempotency ok','ph ph-download-simple','var(--violet-soft)','var(--violet)','evt_7f3a9c','source: n8n','','Queued','var(--surface-3)','var(--muted)','2h ago'],
+      ['Scheduled 3 platform posts','— from content idea #128','ph ph-calendar-plus','var(--surface-3)','var(--muted)','job_8b7e12','','','Scheduled','var(--accent-soft)','var(--accent-ink)','3h ago'],
+      ['Image generated','— DALL·E 3, 1080×1080','ph ph-image','var(--violet-soft)','var(--violet)','img_6a2b11','','','Done','var(--surface-3)','var(--muted)','3h ago'],
+      ['Published to Facebook','— Studio Updates','ph-bold ph-check','var(--accent-soft)','var(--accent)','job_8a01cd','','fb.com/studio/…','Published','var(--accent-soft)','var(--accent-ink)','5h ago'],
+      ['Partial publish','— 2/3 platforms, X deferred','ph ph-warning','var(--amber-soft)','var(--amber)','job_89f2a0','per-platform isolation held','','Partial','var(--amber-soft)','var(--amber)','6h ago'],
+    ].map(([title,detail,icon,iconBg,color,id,attempt,url,status,badgeBg,badgeFg,time]) => ({title,detail,icon,iconBg,color,id,attempt,url,status,badgeBg,badgeFg,time}));
+
+    // analytics
+    const analyticsStats = [
+      ['Total published','1,284','all time'],['Success rate','98.1%','last 30 days'],
+      ['Failed jobs','4','2 recovered'],['Avg / week','47','across 6 accounts'],
+    ].map(([label,value,sub])=>({label,value,sub}));
+    const platformBars = [
+      ['facebook','Facebook','412','92%'],['linkedin','LinkedIn','368','82%'],['x','X / Twitter','284','63%'],
+      ['instagram','Instagram','142','32%'],['threads','Threads','54','12%'],['pinterest','Pinterest','24','6%'],
+    ].map(([p,name,count,pct]) => ({name,count,pct, icon:this.pIcon(p), color:this.pColor(p)}));
+    const publishedUrls = [
+      ['linkedin','Case study: 40% faster builds','linkedin.com/posts/company-page_case…'],
+      ['facebook','Headless WordPress, explained','facebook.com/devinsights/posts/9f3a…'],
+      ['x','Quick tip: headless CMS in 2027','x.com/devinsights/status/18234…'],
+      ['instagram','Behind the build — design system','instagram.com/p/C9fА2bX…'],
+      ['linkedin','5 automations that save 10 hours','linkedin.com/posts/company-page_auto…'],
+    ].map(([p,title,url]) => ({title,url, icon:this.pIcon(p), color:this.pColor(p)}));
+
+    // settings
+    const settingGroups = [
+      ['ph ph-user-circle','Account & Security',[
+        ['Single-user authentication','Session-based, protected routes','Enabled',false,'',''],
+        ['Two-factor authentication','TOTP for admin login','', true,'var(--accent)','right'],
+        ['Encrypted credential vault','Provider keys encrypted at rest','AES-256',false,'',''],
+      ]],
+      ['ph ph-palette','Appearance',[
+        ['Theme',' Light or dark interface', dark?'Dark':'Light',false,'',''],
+        ['Density','Comfortable spacing','Balanced',false,'',''],
+      ]],
+      ['ph ph-bell','Notifications',[
+        ['Publishing results','In-app on success & failure','',true,'var(--accent)','right'],
+        ['Token expiry warnings','Alert 3 days before expiry','',true,'var(--accent)','right'],
+        ['Automation failures','Notify on failed executions','',true,'var(--accent)','right'],
+      ]],
+      ['ph ph-hard-drives','Infrastructure',[
+        ['PostgreSQL','Primary datastore','Connected',false,'',''],
+        ['Redis + BullMQ','Persistent job queue','Connected',false,'',''],
+        ['S3 object storage','Media assets','Connected',false,'',''],
+      ]],
+    ].map(([icon,title,rows]) => ({ icon, title, rows: rows.map(([label,desc,value,toggle,toggleBg,knob]) => ({label,desc,value,toggle, toggleBg: toggleBg||'var(--accent)', knob: knob||'right'})) }));
+
+    // architecture
+    const archFlow = [
+      ['Sources',[['OpenAI','ph ph-circle-half','#10a37f'],['Claude','ph ph-asterisk','#d97757'],['Gemini','ph ph-diamond','#4285f4'],['n8n','ph ph-share-network','var(--violet)'],['REST / Webhook','ph ph-webhooks-logo','var(--blue)']]],
+      ['Ingestion',[['API Gateway','ph ph-key','var(--blue)'],['Validation (Zod)','ph ph-shield-check','var(--accent)'],['Idempotency','ph ph-fingerprint','var(--muted)']]],
+      ['Processing',[['Content engine','ph ph-cpu','var(--accent-ink)'],['Variation engine','ph ph-copy','var(--blue)'],['Image studio','ph ph-image','var(--violet)']]],
+      ['Scheduling',[['PostgreSQL','ph ph-database','var(--accent-ink)'],['BullMQ queue','ph ph-queue','var(--amber)'],['Workers','ph ph-gear-six','var(--muted)']]],
+      ['Connectors',[['Meta','ph ph-facebook-logo','#2563eb'],['LinkedIn','ph ph-linkedin-logo','#0a66c2'],['X · Provider','ph ph-x-logo','var(--text)'],['+ registry','ph ph-plug','var(--accent-ink)']]],
+    ].map(([stage,nodes],i) => ({ stage, nodes:nodes.map(([label,icon,color])=>({label,icon,color})), arrow: i<4, border:'var(--border)', bg:'var(--surface-2)' }));
+    const stackLayers = [
+      ['FE','Next.js · React · TypeScript (strict) · Tailwind · shadcn/ui · TanStack Query · RHF + Zod'],
+      ['API','Node.js services · REST · modular service layer · versioned endpoints'],
+      ['DB','PostgreSQL · Prisma ORM · migrations & versioning'],
+      ['QUEUE','Redis · BullMQ · persistent jobs · controlled concurrency'],
+      ['MEDIA','Sharp · FFmpeg · S3-compatible object storage'],
+      ['SEC','Encrypted credentials · OAuth state · CSRF · webhook signatures · rate limiting'],
+    ].map(([tag,detail])=>({tag,detail}));
+    const reliabilityPoints = [
+      'Idempotent publishing with distributed job locking',
+      'Retry with exponential backoff + dead-letter queue',
+      'Per-platform failure isolation — one failure never blocks others',
+      'Status check before retrying uncertain operations (no double-posts)',
+      'Worker restart recovery — schedules persist in PostgreSQL',
+      'Capability registry hides unsupported actions per connector',
+    ];
+    const entities = ['ContentItems','PlatformPosts','MediaAssets','MediaVariants','PublishingJobs','PublishingAttempts','SocialAccounts','SocialConnectors','AIProviders','PublishingProviders','WebhookEndpoints','APIKeys','AutomationConfigs','Notifications']
+      .map((name,i) => ({ name, bg: i<2?'var(--accent-soft)':'var(--surface-2)', fg: i<2?'var(--accent-ink)':'var(--text-2)', border: i<2?'var(--accent-border)':'var(--border)' }));
+
+    return {
+      rootClass: dark ? 'om-dark' : '',
+      themeIcon: dark ? 'ph ph-sun' : 'ph ph-moon',
+      navSections, r,
+      pageTitle:t[0], pageSub:t[1], pageTag:t[2],
+      toggleTheme:()=>this.toggleTheme(),
+      goStudio:this.go('studio'), goSettings:this.go('settings'), goLogs:this.go('logs'),
+      goScheduled:this.go('scheduled'), goAccounts:this.go('accounts'), goCalendar:this.go('calendar'),
+      goAutomation:this.go('automation'), goIntegrations:this.go('integrations'),
+      stats, upcoming, activity, quickActions, healthAccounts,
+      varTabs, activeVar, platformChips, rewriteActions,
+      genIcon: this.state.generating ? 'ph ph-circle-notch' : 'ph ph-sparkle',
+      genSpin: this.state.generating ? 'animation:om-spin 0.8s linear infinite;' : '',
+      genLabel: this.state.generating ? 'Generating…' : 'Regenerate all variations',
+      generate:()=>{ this.setState({generating:true}); setTimeout(()=>this.setState({generating:false}),1400); },
+      imgTools, imgPresets, imgMeta,
+      horizons, weekDays, plannerItems,
+      calViews, dayHeaders, calCells,
+      postFilters, postRows,
+      mediaFilters, mediaItems,
+      accounts, capCols, capRows,
+      aiProviders, apiKeys, webhookEvents,
+      autoStats, automations,
+      logFilters, logs,
+      analyticsStats, platformBars, publishedUrls,
+      settingGroups,
+      archFlow, stackLayers, reliabilityPoints, entities,
+    };
+  }
+
+  pName(p){ return ({facebook:'Facebook',instagram:'Instagram',linkedin:'LinkedIn',x:'X / Twitter',youtube:'YouTube',pinterest:'Pinterest',threads:'Threads',tiktok:'TikTok',telegram:'Telegram',reddit:'Reddit'})[p]; }
+}
+</script>
+</body>
+</html>
