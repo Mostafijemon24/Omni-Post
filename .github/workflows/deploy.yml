@@ -65,9 +65,10 @@ jobs:
           USER: ${{ secrets.VPS_USER }}
           PORT: ${{ secrets.VPS_PORT || '22' }}
           APP_DIR: ${{ vars.APP_DIR || '/var/www/omnipost' }}
+          APP_PORT: ${{ vars.APP_PORT || '3000' }}
         run: |
           ssh -i ~/.ssh/deploy_key -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "$USER@$HOST" \
-            "APP_DIR='$APP_DIR' BRANCH='main' bash -s" < deploy/deploy.sh
+            "APP_DIR='$APP_DIR' PORT='$APP_PORT' BRANCH='main' bash -s" < deploy/deploy.sh
 
       - name: Clean up key
         if: always()
