@@ -38,6 +38,16 @@ approving a client needs the owner password. Discovery: `/.well-known/oauth-prot
 `/.well-known/oauth-authorization-server`. Tools: `create_post_draft`, `schedule_post`, `list_posts`,
 `generate_platform_variations`, `get_caption_limits`. Nothing is published by a tool.
 
+**REST API for automations (n8n, Make, scripts).** Create a token in Integrations → REST API → Generate key
+(shown once, stored hashed), then call `/api/v1/*` with `Authorization: Bearer opk_…`: list/create posts,
+`GET /api/v1/posts/due` for posts whose scheduled time has come, `PATCH /api/v1/posts/{id}` to report
+`published` (with URL) or `failed`, and `POST /api/v1/generate`. Schema: `/api/v1/openapi.json`. Ready-made
+n8n workflows are in [`integrations/n8n`](integrations/n8n). Run
+[`supabase/migrations/002_api_tokens_and_publishing.sql`](supabase/migrations/002_api_tokens_and_publishing.sql) after 001.
+
+**Deploying to the VPS:** see [`../deploy/README.md`](../deploy/README.md) — one-time `setup-vps.sh`, then every push to
+`main` is tested and deployed by GitHub Actions.
+
 Hosting must run Next.js as a server (Vercel, or `npm run build && npm start` on a Node host); a static
 export cannot serve `/mcp`, `/oauth/*` or `/api/*`.
 

@@ -758,9 +758,25 @@ export class OmniPostLogic extends Store<OmniState> {
 
     // ---- REST
     const extraKeys = (s.extraKeys||[]);
-    const genKey = () => set({ extraKeys:[{ label:'New key · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), key:'opk_live_'+this.rnd(14) }].concat(extraKeys) });
+    const realApi = !!(s.backend && s.backend.db && s.backend.auth);
+    const genKey = () => {
+      if (!realApi) return set({ extraKeys:[{ label:'New key · '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), key:'opk_live_'+this.rnd(14) }].concat(extraKeys) });
+      const name = (typeof window !== 'undefined' && window.prompt('Name this key (e.g. n8n):', 'n8n')) || '';
+      if (!name) return;
+      fetch('/api/tokens', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ name }) })
+        .then(r => r.json().then(j => ({ ok:r.ok, j })))
+        .then(({ ok, j }) => this.setState({ extraKeys:[ ok ? { label:j.name+' · copy it now, it won’t be shown again', key:j.token, badge:'live · shown once' } : { label:'Could not create key', key:j.error||'error', badge:'error' } ].concat(this.state.extraKeys||[]) }))
+        .catch(() => this.setState({ extraKeys:[{ label:'Could not create key', key:'network error', badge:'error' }].concat(this.state.extraKeys||[]) }));
+    };
     const MT = { GET:['var(--blue-soft)','var(--blue)'], POST:['var(--accent-soft)','var(--accent-ink)'], PATCH:['var(--amber-soft)','var(--amber)'], DELETE:['var(--red-soft)','var(--red)'] };
-    const endpoints = [
+    const endpoints = (realApi ? [
+      ['GET','/api/v1/posts','List posts (?status=draft|scheduled|published, ?limit=)','token'],
+      ['GET','/api/v1/posts/due','Scheduled posts whose time has come — for n8n to publish','token'],
+      ['POST','/api/v1/posts','Create a draft or scheduled post','token'],
+      ['PATCH','/api/v1/posts/{id}','Mark published (with URL) or failed, reschedule, edit','token'],
+      ['POST','/api/v1/generate','Write per-platform posts with OpenRouter; optionally save them','token'],
+      ['GET','/api/v1/openapi.json','Machine-readable schema for tools & GPT Actions','public'],
+    ] : [
       ['POST','/content','Create a draft (text, platforms, schedule, media URLs)','content:write'],
       ['PATCH','/content/{id}','Update a draft or a platform variation','content:write'],
       ['GET','/content/{id}','Retrieve content with all variations','content:read'],
@@ -772,9 +788,9 @@ export class OmniPostLogic extends Store<OmniState> {
       ['GET','/posts/{id}/status','Per-platform publishing status & URLs','status:read'],
       ['POST','/imports','Start a file import job (CSV/XLSX/JSON/PDF)','import:write'],
       ['GET','/openapi.json','Machine-readable schema for tools & GPT Actions','public'],
-    ].map(([method,path,desc,scope]) => ({ method, path, desc, scope, bg:MT[method][0], fg:MT[method][1] }));
+    ]).map(([method,path,desc,scope]) => ({ method, path, desc, scope, bg:MT[method][0], fg:MT[method][1] }));
     const apiLimits = [['ph ph-gauge','120 req/min per key'],['ph ph-fingerprint','Idempotency-Key header'],['ph ph-shield-check','Zod-validated, versioned'],['ph ph-file','25 MB body · larger media via upload URL'],['ph ph-arrows-clockwise','Key rotation & revocation']].map(([icon,label])=>({icon,label}));
-    const schemaUrl = 'https://omnipost.mydomain.com/api/v1/openapi.json';
+    const schemaUrl = (s.origin || 'https://post.avonixai.com') + '/api/v1/openapi.json';
     const gpt = { schema:schemaUrl, copy:copy(schemaUrl), copyLabel:cl(schemaUrl) };
 
     // ---- webhooks

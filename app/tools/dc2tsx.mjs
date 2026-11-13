@@ -174,7 +174,7 @@ mkdirSync(OUT_SCREENS, { recursive: true });
 mkdirSync(dirname(OUT_CSS), { recursive: true });
 
 // Screens that became interactive beyond the design template; port design changes to them by hand.
-const HAND_MAINTAINED = new Set(["StudioScreen"]);
+const HAND_MAINTAINED = new Set(["StudioScreen", "IntegrationsScreen"]);
 const names = [];
 for (const sc of screens) {
   const key = /\{\{\s*r\.(\w+)\s*\}\}/.exec(sc.attribs.value)[1];

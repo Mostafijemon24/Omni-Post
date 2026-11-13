@@ -25,6 +25,7 @@ export type Post = {
   id: string; title: string; platform: string; account: string | null; headline: string | null; caption: string;
   hashtags: string[]; cta: string | null; image_alt: string | null; status: string; scheduled_at: string | null;
   timezone: string | null; source: string; created_at: string;
+  published_url?: string | null; published_at?: string | null; last_error?: string | null;
 };
 
 export class PostError extends Error {}
@@ -52,6 +53,38 @@ export async function schedulePost(id: string, scheduledAt: string, timezone?: s
   z.string().uuid().parse(id);
   z.string().datetime({ offset: true }).parse(scheduledAt);
   const rows = await getDb().update("posts", { id }, { status: "scheduled", scheduled_at: scheduledAt, timezone: timezone ?? null, updated_at: new Date().toISOString() });
+  if (!rows.length) throw new PostError(`No post with id ${id}.`);
+  return rows[0] as unknown as Post;
+}
+
+/** Scheduled posts whose time has come, oldest first — what an automation should publish now. */
+export async function duePosts(now = Date.now()): Promise<Post[]> {
+  const rows = await listPosts({ status: "scheduled", limit: 500 });
+  return rows.filter((p) => p.scheduled_at && Date.parse(p.scheduled_at) <= now).sort((a, b) => Date.parse(a.scheduled_at!) - Date.parse(b.scheduled_at!));
+}
+
+export const PostUpdate = z.object({
+  status: z.enum(STATUSES).optional(),
+  scheduled_at: z.string().datetime({ offset: true }).nullable().optional(),
+  timezone: z.string().max(64).optional(),
+  caption: z.string().max(63206).optional(),
+  headline: z.string().max(300).optional(),
+  hashtags: z.array(z.string().max(100)).max(30).optional(),
+  published_url: z.string().url().max(2000).optional(),
+  last_error: z.string().max(2000).optional(),
+}).strict();
+
+/** Partial update. Marking a post published stamps published_at and clears any previous error. */
+export async function updatePost(id: string, patch: z.input<typeof PostUpdate>): Promise<Post> {
+  z.string().uuid().parse(id);
+  const p = PostUpdate.parse(patch);
+  const row: Record<string, unknown> = { ...p, updated_at: new Date().toISOString() };
+  if (p.status === "published") Object.assign(row, { published_at: new Date().toISOString(), last_error: p.last_error ?? null });
+  if (p.status === "scheduled" && !p.scheduled_at) {
+    const cur = (await getDb().select("posts", { id }))[0];
+    if (!cur?.scheduled_at) throw new PostError("scheduled_at is required to schedule a post.");
+  }
+  const rows = await getDb().update("posts", { id }, row);
   if (!rows.length) throw new PostError(`No post with id ${id}.`);
   return rows[0] as unknown as Post;
 }

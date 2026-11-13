@@ -1,0 +1,111 @@
+{
+  "name": "OmniPost — AI drafts every morning",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "name": "Every day at 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t",
+              "name": "topic",
+              "value": "The future of AI in WordPress development",
+              "type": "string"
+            },
+            {
+              "id": "k",
+              "name": "keyword",
+              "value": "AI web development",
+              "type": "string"
+            },
+            {
+              "id": "m",
+              "name": "model",
+              "value": "meta-llama/llama-3.3-70b-instruct:free",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Brief (edit me)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ],
+      "notes": "model: any OpenRouter model whose id ends in :free costs nothing (rate-limited). Check openrouter.ai/models for current free ones."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://post.avonixai.com/api/v1/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ topic: $json.topic, keyword: $json.keyword, model: $json.model, platforms: [\"facebook\",\"linkedin\",\"x\",\"threads\"], tone: \"Authoritative\", language: \"English\", save: \"draft\" }) }}"
+      },
+      "name": "Generate & save drafts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "OmniPost API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every day at 09:00": {
+      "main": [
+        [
+          {
+            "node": "Brief (edit me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief (edit me)": {
+      "main": [
+        [
+          {
+            "node": "Generate & save drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

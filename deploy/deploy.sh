@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Updates OmniPost on the VPS: pull the branch, install, build, (re)start under pm2, health-check.
+# Run by GitHub Actions over SSH, or by hand:  APP_DIR=/var/www/omnipost bash deploy/deploy.sh
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/var/www/omnipost}"
+BRANCH="${BRANCH:-main}"
+PM2_NAME="${PM2_NAME:-omnipost}"
+PORT="${PORT:-3000}"
+
+log() { printf '\n\033[1;32m▶ %s\033[0m\n' "$*"; }
+die() { printf '\n\033[1;31m✖ %s\033[0m\n' "$*" >&2; exit 1; }
+
+# Non-interactive SSH sessions often miss nvm/npm-global paths.
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+export PATH="$HOME/.npm-global/bin:/usr/local/bin:$PATH"
+
+command -v git >/dev/null || die "git is not installed"
+command -v node >/dev/null || die "Node.js is not installed (need 20+)"
+[ "$(node -p 'process.versions.node.split(".")[0]')" -ge 20 ] || die "Node.js 20+ required, found $(node -v)"
+command -v pm2 >/dev/null || die "pm2 is not installed — run deploy/setup-vps.sh once first"
+[ -d "$APP_DIR/.git" ] || die "$APP_DIR is not a git checkout — run deploy/setup-vps.sh once first"
+[ -f "$APP_DIR/app/.env.local" ] || die "$APP_DIR/app/.env.local is missing — run deploy/setup-vps.sh once first"
+
+log "Fetching $BRANCH"
+cd "$APP_DIR"
+git fetch --prune origin "$BRANCH"
+git checkout -q -B "$BRANCH" "origin/$BRANCH"   # the server copy always matches GitHub exactly
+git reset -q --hard "origin/$BRANCH"
+echo "  at $(git log -1 --format='%h %s')"
+
+log "Installing dependencies"
+cd "$APP_DIR/app"
+npm ci --no-audit --no-fund
+
+log "Building"
+npm run build
+
+log "Starting under pm2 ($PM2_NAME, port $PORT)"
+if pm2 describe "$PM2_NAME" >/dev/null 2>&1; then
+  pm2 reload "$PM2_NAME" --update-env
+else
+  pm2 start npm --name "$PM2_NAME" --cwd "$APP_DIR/app" -- start -- -p "$PORT"
+fi
+pm2 save >/dev/null
+
+log "Health check"
+for i in $(seq 1 20); do
+  if curl -fsS "http://127.0.0.1:$PORT/api/v1/openapi.json" >/dev/null 2>&1; then
+    echo "  OK — http://127.0.0.1:$PORT is serving"
+    exit 0
+  fi
+  sleep 2
+done
+pm2 logs "$PM2_NAME" --lines 40 --nostream || true
+die "App did not answer on port $PORT after 40s"
