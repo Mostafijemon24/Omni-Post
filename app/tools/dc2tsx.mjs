@@ -173,11 +173,14 @@ const banner = `/* eslint-disable @typescript-eslint/no-explicit-any */\n// GENE
 mkdirSync(OUT_SCREENS, { recursive: true });
 mkdirSync(dirname(OUT_CSS), { recursive: true });
 
+// Screens that became interactive beyond the design template; port design changes to them by hand.
+const HAND_MAINTAINED = new Set(["StudioScreen"]);
 const names = [];
 for (const sc of screens) {
   const key = /\{\{\s*r\.(\w+)\s*\}\}/.exec(sc.attribs.value)[1];
   const comp = key[0].toUpperCase() + key.slice(1) + "Screen";
   names.push([key, comp]);
+  if (HAND_MAINTAINED.has(comp)) continue;
   const body = sc.children.map((c) => render(c, new Set(), 2, { pre: false })).join("");
   const usesFragment = body.includes("<Fragment");
   const code = `${banner}"use client";\n\n${usesFragment ? 'import { Fragment } from "react";\n' : ""}import { css } from "@/lib/css";\nimport type { ViewModel } from "@/lib/omnipost/logic";\n\nexport function ${comp}({ v }: { v: ViewModel }) {\n  return (\n    <>\n${body}    </>\n  );\n}\n`;
