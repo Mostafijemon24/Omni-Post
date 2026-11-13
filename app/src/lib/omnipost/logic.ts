@@ -2,6 +2,7 @@
 import React from "react";
 import { Store } from "./store";
 import { aiProviders as aiAdapters, DEFAULT_AI_PROVIDER, CAPTION_LIMITS } from "@/lib/adapters/mock";
+import { postCounts, filterPosts, upcomingPosts, recentCount, shiftMonth, monthLabel, monthGrid, localDate } from "./posts";
 import { shortenToLimit, parseHashtags, formatSchedule, STUDIO_TONES, STUDIO_LANGUAGES, STUDIO_MODELS, zonedToIso, isoToZoned } from "./studio";
 
 const ALL_PLATFORMS = ['facebook','instagram','linkedin','x','threads'];
@@ -12,7 +13,7 @@ export type OmniState = Record<string, any>;
 export class OmniPostLogic extends Store<OmniState> {
   state: OmniState = { route:'dashboard', theme:'light', activePlatform:'facebook', generating:false, generated:true, intTab:'ai', wizProvider:'openrouter', wizStep:1, wizAuth:0, impStep:0, impMode:'approval', incoming:[] };
 
-  go(route){ return () => this.setState({ route }); }
+  go(route){ return () => this.setState({ route, postsFilter:null }); }
   componentDidMount(){ this._boot = true; }
 
   toggleTheme(){ this.setState(s => ({ theme: s.theme==='light' ? 'dark' : 'light' })); }
@@ -42,7 +43,13 @@ export class OmniPostLogic extends Store<OmniState> {
       { title:'Monitor', items:[['logs','Publishing Logs','ph ph-list-checks'],['analytics','Analytics','ph ph-chart-bar']] },
       { title:'System', items:[['settings','Settings','ph ph-gear'],['architecture','Architecture','ph ph-blueprint']] },
     ];
-    const badges = { posts:'128', scheduled:'34', drafts:'11', accounts:'6' };
+    // Once the database answers, every post count and list is real; until then the design's sample data shows.
+    const s0 = this.state;
+    const live = !!(s0.backend && s0.backend.db && !s0.backend.dbIssue && s0.postsLoaded);
+    const realPosts = live ? (s0.studioPosts||[]) : [];
+    const pc = postCounts(realPosts);
+    const num = n => n ? String(n) : '';
+    const badges = live ? { posts:num(pc.posts), scheduled:num(pc.scheduled), drafts:num(pc.drafts), accounts:'6' } : { posts:'128', scheduled:'34', drafts:'11', accounts:'6' };
     const badgeTone = { scheduled:true, drafts:true };
     const navSections = nav.map(sec => ({ title:sec.title, items: sec.items.map(([id,label,icon]) => {
       const active = route === id;
@@ -87,8 +94,19 @@ export class OmniPostLogic extends Store<OmniState> {
       ['Failed (30d)','4','2 recoverable','ph ph-warning','var(--red)','ph ph-arrow-down','var(--red)'],
       ['Drafts','11','3 AI-generated','ph ph-note-pencil','var(--muted)','ph ph-dot','var(--muted)'],
     ].map(([label,value,delta,icon,color,deltaIcon,deltaColor]) => ({label,value,delta,icon,color,deltaIcon,deltaColor}));
+    const nextUp = upcomingPosts(realPosts, 4);
+    if (live) {
+      const liveStats = {
+        'Scheduled':[pc.scheduled, nextUp[0] ? 'next: '+nextUp[0].when : 'nothing queued'],
+        'Published (30d)':[recentCount(realPosts,'published',30), pc.published+' all time'],
+        'Pending approval':[pc.approval, pc.approval ? 'needs review' : 'nothing waiting'],
+        'Failed (30d)':[recentCount(realPosts,'failed',30), pc.failed ? 'open Publishing Logs' : 'no failures'],
+        'Drafts':[pc.drafts, pc.drafts ? 'not scheduled yet' : 'no drafts'],
+      };
+      stats.forEach(st => { const v = liveStats[st.label]; if (v) { st.value = String(v[0]); st.delta = v[1]; st.deltaIcon = 'ph ph-dot'; st.deltaColor = 'var(--muted)'; } });
+    }
 
-    const upcoming = [
+    const upcoming = live ? nextUp.map(x => ({ title:x.title, accounts:x.label+(x.account && x.account!=='—' ? ': '+x.account : ''), time:x.time, date:x.dateLabel, icon:this.pIcon(x.platforms[0]), color:this.pColor(x.platforms[0]) })) : [
       ['The future of AI in WordPress development','facebook','Facebook: Dev Insights · +2','10:00','Jan 15'],
       ['5 automations that save 10 hours a week','linkedin','LinkedIn: Company Page','14:30','Jan 15'],
       ['Quick tip: headless CMS in 2027','x','X: @devinsights','19:00','Jan 15'],
@@ -169,8 +187,17 @@ export class OmniPostLogic extends Store<OmniState> {
     ].map(([num,title,category,platforms,when,status]) => ({num,title,category,platforms,when,status, statusBg: status==='Review'?'var(--amber-soft)':'var(--accent-soft)', statusFg: status==='Review'?'var(--amber)':'var(--accent-ink)'}));
 
     // calendar
-    const calViews = ['Month','Week','Day','List','Timeline'].map((label,i)=>({label, weight:i===0?600:450, bg:i===0?'var(--surface)':'transparent', fg:i===0?'var(--text)':'var(--muted)'}));
+    // calendar: any month, with real posts once the database is connected
+    const calMode = s0.calView === 'List' ? 'List' : 'Month';
+    const calViews = ['Month','List'].map(label => { const on = label===calMode; return { label, go:()=>this.setState({ calView:label }), weight:on?600:450, bg:on?'var(--surface)':'transparent', fg:on?'var(--text)':'var(--muted)' }; });
     const dayHeaders = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const calMonth = s0.calMonth || (live ? localDate().slice(0,7) : '2027-01');
+    const calToday = live ? localDate() : '2027-01-15';
+    const calTitle = monthLabel(calMonth);
+    const calPrev = () => this.setState({ calMonth:shiftMonth(calMonth,-1) });
+    const calNext = () => this.setState({ calMonth:shiftMonth(calMonth,1) });
+    const calGoToday = () => this.setState({ calMonth:calToday.slice(0,7) });
+    const openPost = id => () => this.setState({ postsFilter:null, postPlatform:'', postOpen:id, route:'posts' });
     const calEvents = {
       '1':[['x','Tip thread','s']], '3':[['linkedin','Case study','p'],['facebook','Weekly post','s']],
       '6':[['instagram','Carousel','s']], '8':[['facebook','AI post','p'],['x','Quick tip','p']],
@@ -180,19 +207,31 @@ export class OmniPostLogic extends Store<OmniState> {
       '20':[['instagram','Stack post','pending']], '22':[['linkedin','Poll','s']],
       '24':[['facebook','Recap','p']], '27':[['x','Hot take','s']], '29':[['instagram','Teaser','s']],
     };
-    (this.state.studioPosts||[]).filter(x => x.status==='scheduled' && /^2027-01-\d\d$/.test(x.date)).forEach(x => {
-      const d = String(Number(x.date.slice(8))); calEvents[d] = (calEvents[d]||[]).concat([[x.platforms[0], x.label+' · new', 's']]); });
-    const eColor = { s:['var(--accent-soft)','var(--accent-ink)'], p:['var(--blue-soft)','var(--blue)'], pending:['var(--amber-soft)','var(--amber)'] };
-    const calCells = [];
-    for(let i=0;i<35;i++){
-      const dayNum = i-2; const inMonth = dayNum>=1 && dayNum<=31; const isToday = dayNum===15;
-      const evs = (calEvents[String(dayNum)]||[]).map(([p,label,tone])=>({label, icon:this.pIcon(p), bg:eColor[tone][0], fg:eColor[tone][1]}));
-      calCells.push({ day: inMonth ? dayNum : (dayNum<1 ? 29+dayNum : dayNum-31), posts:evs,
-        bg: isToday ? 'var(--accent-soft)' : (inMonth ? 'var(--surface)' : 'var(--surface-2)'),
-        dayColor: inMonth ? (isToday?'var(--accent-ink)':'var(--text)') : 'var(--faint)', dayWeight: isToday?700:500 });
+    const eColor = { s:['var(--accent-soft)','var(--accent-ink)'], p:['var(--blue-soft)','var(--blue)'], pending:['var(--amber-soft)','var(--amber)'], failed:['var(--red-soft)','var(--red)'] };
+    const tones = { scheduled:'s', published:'p', approval:'pending', failed:'failed' };
+    const byDate = {};
+    const addEvent = (date, ev) => { (byDate[date] = byDate[date] || []).push(ev); };
+    if (live) {
+      realPosts.filter(x => x.date && tones[x.status]).forEach(x => addEvent(x.date, { platform:x.platforms[0], label:(x.time ? x.time+' ' : '')+x.title, tone:tones[x.status], go:openPost(x.id), sort:x.time||'' }));
+    } else {
+      Object.keys(calEvents).forEach(d => calEvents[d].forEach(([p,label,tone]) => addEvent('2027-01-'+String(d).padStart(2,'0'), { platform:p, label, tone, go:this.go('posts'), sort:'' })));
+      (this.state.studioPosts||[]).filter(x => x.status==='scheduled' && x.date).forEach(x => addEvent(x.date, { platform:x.platforms[0], label:x.label+' · new', tone:'s', go:this.go('posts'), sort:'' }));
     }
+    const evVm = e => ({ label:e.label, icon:this.pIcon(e.platform), bg:eColor[e.tone][0], fg:eColor[e.tone][1], go:e.go });
+    const calCells = monthGrid(calMonth).map(g => {
+      const evs = (byDate[g.date]||[]).slice().sort((a,b) => a.sort.localeCompare(b.sort));
+      const isToday = g.date === calToday;
+      return { day:g.day, posts:evs.slice(0,3).map(evVm), more: evs.length>3 ? '+'+(evs.length-3)+' more' : '', showAll:()=>this.setState({ calView:'List' }),
+        bg: isToday ? 'var(--accent-soft)' : (g.inMonth ? 'var(--surface)' : 'var(--surface-2)'),
+        dayColor: g.inMonth ? (isToday?'var(--accent-ink)':'var(--text)') : 'var(--faint)', dayWeight: isToday?700:500 };
+    });
+    const calList = Object.keys(byDate).filter(d => d.slice(0,7)===calMonth).sort().map(d => ({ date:monthLabel(d.slice(0,7)).slice(0,3)+' '+Number(d.slice(8)), isToday:d===calToday,
+      posts:byDate[d].slice().sort((a,b) => a.sort.localeCompare(b.sort)).map(evVm) }));
+    const calIsList = calMode === 'List';
+    const calEmpty = calIsList && !calList.length ? 'Nothing on the calendar for '+calTitle+'.' : '';
 
-    // posts
+
+    // posts: filters, platform filter and row actions work; rows and counts are real once the database is connected
     const postStatusMap = { scheduled:['Scheduled','var(--accent-soft)','var(--accent-ink)'], published:['Published','var(--blue-soft)','var(--blue)'], draft:['Draft','var(--surface-3)','var(--muted)'], approval:['Pending','var(--amber-soft)','var(--amber)'], failed:['Failed','var(--red-soft)','var(--red)'] };
     const allPosts = [
       ['The future of AI in WordPress development','AI is quietly rewriting how we build…',['facebook','linkedin','x'],'Dev Insights','Jan 15 · 10:00','scheduled'],
@@ -204,20 +243,50 @@ export class OmniPostLogic extends Store<OmniState> {
       ['Case study: 40% faster builds','The real numbers behind the claim…',['linkedin','x'],'Company Page','Jan 12 · 14:30','failed'],
       ['Headless WordPress, explained','Everything you need to get started…',['facebook','instagram','linkedin'],'Dev Insights','Jan 17 · 09:00','scheduled'],
     ];
-    const postFilterDefs = [['posts','All','128'],['scheduled','Scheduled','34'],['published','Published','83'],['drafts','Drafts','11'],['approval','Pending','7']];
+    const activeFilter = (route==='posts' && s0.postsFilter) || (['scheduled','published','drafts'].includes(route) ? route : 'posts');
+    const postFilterDefs = live
+      ? [['posts','All',pc.posts],['scheduled','Scheduled',pc.scheduled],['published','Published',pc.published],['drafts','Drafts',pc.drafts],['approval','Pending',pc.approval],['failed','Failed',pc.failed]]
+      : [['posts','All','128'],['scheduled','Scheduled','34'],['published','Published','83'],['drafts','Drafts','11'],['approval','Pending','7']];
+    const isRouteFilter = id => ['posts','scheduled','published','drafts'].includes(id);
     const postFilters = postFilterDefs.map(([id,label,count]) => {
-      const active = route===id || (route==='posts'&&id==='posts');
-      return { label, count, border:active?'var(--accent-border)':'var(--border)', bg:active?'var(--accent-soft)':'var(--surface)', fg:active?'var(--accent-ink)':'var(--text-2)', weight:active?600:450 };
+      const active = activeFilter===id;
+      return { label, count:String(count), go:()=>this.setState(isRouteFilter(id) ? { postsFilter:null, postOpen:null, route:id } : { postsFilter:id, postOpen:null, route:'posts' }),
+        border:active?'var(--accent-border)':'var(--border)', bg:active?'var(--accent-soft)':'var(--surface)', fg:active?'var(--accent-ink)':'var(--text-2)', weight:active?600:450 };
     });
-    const routeFilter = { scheduled:'scheduled', published:'published', drafts:'draft' }[route];
     const srcList = ['Content Studio','n8n','MCP · Claude','Manual upload','CSV import','REST API','Content Studio','MCP · ChatGPT'];
     const srcIcon = x => x.startsWith('MCP')?'ph ph-plugs-connected':x==='n8n'?'ph ph-share-network':x.includes('import')?'ph ph-file-arrow-up':x==='REST API'?'ph ph-code':x==='Manual upload'?'ph ph-upload-simple':'ph ph-sparkle';
-    const studioRows = (this.state.studioPosts||[]).map(x => [x.title, x.excerpt, x.platforms, x.account, x.when, x.status, x.source || 'Content Studio']);
-    const incomingPosts = studioRows.concat((this.state.incoming||[]).map(x => [x.title, x.excerpt, x.platforms, x.account, '—', 'draft', x.source+' (mock)']));
-    const postRows = incomingPosts.concat(allPosts.map((p,i)=>p.concat([srcList[i]]))).filter(p => !routeFilter || p[5]===routeFilter).map(([title,excerpt,icons,account,when,st,source]) => {
-      const sm = postStatusMap[st];
-      return { title, excerpt, account, when, source:'via '+source, srcIcon:srcIcon(source), icons:icons.map(p=>({icon:this.pIcon(p),color:this.pColor(p)})), status:sm[0], statusBg:sm[1], statusFg:sm[2] };
+    const pName = { facebook:'Facebook', instagram:'Instagram', linkedin:'LinkedIn', x:'X', threads:'Threads', youtube:'YouTube', tiktok:'TikTok', pinterest:'Pinterest', reddit:'Reddit', telegram:'Telegram' };
+    const studioRows = (this.state.studioPosts||[]).map(x => ({ title:x.title, excerpt:x.excerpt, platforms:x.platforms, account:x.account, when:x.when, status:x.status, source:x.source || 'Content Studio' }));
+    const sampleRows = studioRows
+      .concat((this.state.incoming||[]).map(x => ({ title:x.title, excerpt:x.excerpt, platforms:x.platforms, account:x.account, when:'—', status:'draft', source:x.source+' (mock)' })))
+      .concat(allPosts.map(([title,excerpt,platforms,account,when,status],i) => ({ title, excerpt, platforms, account, when, status, source:srcList[i] })));
+    const postPool = live ? realPosts : sampleRows;
+    const postPlatform = s0.postPlatform || '';
+    const postPlatforms = [{ value:'', label:'All platforms' }].concat(Object.keys(pName).filter(p => p===postPlatform || postPool.some(x => x.platforms.includes(p))).map(p => ({ value:p, label:pName[p] })));
+    const setPostPlatform = e => this.setState({ postPlatform:e.target.value, postOpen:null });
+    const postRows = filterPosts(postPool, activeFilter, postPlatform).map(x => {
+      const sm = postStatusMap[x.status] || postStatusMap.draft;
+      const row = { title:x.title, excerpt:x.excerpt, account:x.account, when:x.when, source:'via '+x.source, srcIcon:srcIcon(x.source), icons:x.platforms.map(p=>({icon:this.pIcon(p),color:this.pColor(p)})), status:sm[0], statusBg:sm[1], statusFg:sm[2] };
+      if (!live) return row;
+      const open = s0.postOpen===x.id;
+      const sched = s0.postSched && s0.postSched.id===x.id ? s0.postSched : null;
+      const setSched = patch => this.setState({ postSched:Object.assign({}, sched, patch), postError:'' });
+      return Object.assign(row, { id:x.id, canOpen:true, open,
+        toggle:()=>this.setState({ postOpen:open?null:x.id, postSched:null, postConfirm:null, postError:'' }),
+        caption:x.caption, tags:(x.hashtags||[]).join(' '), failure:x.lastError||'', url:x.publishedUrl||'',
+        busy:s0.postBusy===x.id, actionError:open ? (s0.postError||'') : '',
+        canSchedule:x.status!=='published', canPublish:x.status!=='published', canDraft:x.status!=='draft',
+        scheduleLabel:x.scheduledAt ? 'Reschedule' : 'Schedule',
+        startSchedule:()=>this.setState({ postConfirm:null, postError:'', postSched:{ id:x.id, date:x.date || localDate(new Date(Date.now()+86400000)), time:x.time || '10:00', tz:x.timezone || this.browserTz() } }),
+        sched: sched && { date:sched.date, time:sched.time, tz:sched.tz, setDate:e=>setSched({ date:e.target.value }), setTime:e=>setSched({ time:e.target.value }),
+          save:()=>this.postSchedule(x.id, sched), cancel:()=>this.setState({ postSched:null, postError:'' }) },
+        markPublished:()=>this.postPatch(x.id, { status:'published' }),
+        toDraft:()=>this.postPatch(x.id, { status:'draft', scheduled_at:null }),
+        confirming:s0.postConfirm===x.id, askDelete:()=>this.setState({ postConfirm:x.id, postSched:null, postError:'' }), cancelDelete:()=>this.setState({ postConfirm:null }),
+        doDelete:()=>this.postDelete(x.id) });
     });
+    const postsNote = live ? '' : 'Sample data. Posts you save appear here once the database is connected.';
+    const postsEmpty = live && !postRows.length ? (pc.posts ? 'No posts match this filter.' : 'No posts yet. Write one in the AI Content Studio, or send drafts from Claude through the MCP connector.') : '';
 
     // media
     const mediaFilters = ['All media','Generated','Uploaded','Unused'].map((label,i)=>({label, border:i===0?'var(--accent-border)':'var(--border)', bg:i===0?'var(--accent-soft)':'var(--surface)', fg:i===0?'var(--accent-ink)':'var(--text-2)', weight:i===0?600:450}));
@@ -381,6 +450,7 @@ export class OmniPostLogic extends Store<OmniState> {
       rootClass: dark ? 'om-dark' : '',
       themeIcon: dark ? 'ph ph-sun' : 'ph ph-moon',
       navSections, r,
+      backendIssue: (this.state.backend && this.state.backend.dbIssue) || '',
       pageTitle:t[0], pageSub:t[1], pageTag:t[2],
       toggleTheme:()=>this.toggleTheme(),
       goStudio:this.go('studio'), goSettings:this.go('settings'), goLogs:this.go('logs'),
@@ -393,8 +463,8 @@ export class OmniPostLogic extends Store<OmniState> {
       genLabel: this.state.generating ? 'Generating…' : 'Regenerate all variations',
       imgTools, imgPresets, imgMeta,
       horizons, weekDays, plannerItems,
-      calViews, dayHeaders, calCells,
-      postFilters, postRows,
+      calViews, dayHeaders, calCells, calTitle, calPrev, calNext, calGoToday, calIsList, calList, calEmpty,
+      postFilters, postRows, postPlatform, postPlatforms, setPostPlatform, postsNote, postsEmpty, goStudioFromPosts:this.go('studio'),
       mediaFilters, mediaItems,
       accounts, capCols, capRows,
       aiProviders, apiKeys, webhookEvents,
@@ -500,8 +570,40 @@ export class OmniPostLogic extends Store<OmniState> {
     const tz = p.timezone || 'Asia/Dhaka';
     const z = p.scheduled_at ? isoToZoned(p.scheduled_at, tz) : null;
     const name = { facebook:'Facebook', instagram:'Instagram', linkedin:'LinkedIn', x:'X', threads:'Threads' }[p.platform] || p.platform;
+    const when = z ? formatSchedule(z.date, z.time, tz).split(' · ').slice(0,2).join(' · ') : '—';
     return { id:p.id, title:p.title, excerpt:(p.caption||'').slice(0,60)+((p.caption||'').length>60?'…':''), platforms:[p.platform], account:p.account||'—',
-      when: z ? formatSchedule(z.date, z.time, tz).split(' · ').slice(0,2).join(' · ') : '—', status:p.status, date: z ? z.date : '', label:name, source:p.source };
+      when, status:p.status, date: z ? z.date : '', label:name, source:p.source,
+      time: z ? z.time : '', dateLabel: z ? when.split(',')[0] : '', timezone:p.timezone||'', caption:p.caption||'', hashtags:p.hashtags||[],
+      scheduledAt:p.scheduled_at||null, publishedAt:p.published_at||null, createdAt:p.created_at||null, publishedUrl:p.published_url||'', lastError:p.last_error||'' };
+  }
+
+  browserTz(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } }
+
+  /** Applies a change to a stored post and swaps the fresh row into every list. */
+  async postPatch(id, patch){
+    this.setState({ postBusy:id, postError:'' });
+    try {
+      const r = await fetch('/api/posts/'+id, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(patch) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return this.setState({ postBusy:null, postError:j.error || 'Could not update the post.' });
+      this.setState({ postBusy:null, postSched:null, studioPosts:(this.state.studioPosts||[]).map(p => p.id===id ? this.fromDbPost(j.post) : p) });
+    } catch { this.setState({ postBusy:null, postError:'Network error — nothing was changed.' }); }
+  }
+
+  postSchedule(id, sched){
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(sched.date) || !/^\d{2}:\d{2}$/.test(sched.time)) return this.setState({ postError:'Pick a date and a time.' });
+    const iso = zonedToIso(sched.date, sched.time, sched.tz);
+    if (!(Date.parse(iso) > Date.now())) return this.setState({ postError:'Pick a time in the future.' });
+    return this.postPatch(id, { status:'scheduled', scheduled_at:iso, timezone:sched.tz });
+  }
+
+  async postDelete(id){
+    this.setState({ postBusy:id, postError:'' });
+    try {
+      const r = await fetch('/api/posts/'+id, { method:'DELETE' });
+      if (!r.ok) return this.setState({ postBusy:null, postError:'Could not delete the post.' });
+      this.setState({ postBusy:null, postOpen:null, postConfirm:null, studioPosts:(this.state.studioPosts||[]).filter(p => p.id!==id) });
+    } catch { this.setState({ postBusy:null, postError:'Network error — nothing was deleted.' }); }
   }
 
   /** Detects the real backend and loads stored posts. Silent no-op in prototype mode. */
@@ -513,7 +615,7 @@ export class OmniPostLogic extends Store<OmniState> {
       this.setState({ backend });
       if (!backend.db) return;
       const r = await fetch('/api/posts', { cache:'no-store' });
-      if (r.ok) this.setState({ studioPosts:(await r.json()).posts.map(p => this.fromDbPost(p)) });
+      if (r.ok) this.setState({ studioPosts:(await r.json()).posts.map(p => this.fromDbPost(p)), postsLoaded:true });
     } catch {}
   }
 

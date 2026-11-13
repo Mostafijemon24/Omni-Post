@@ -15,6 +15,8 @@ into `app/.env.local`, builds and starts the app on port 3000. Then point nginx 
 [`nginx-omnipost.conf`](nginx-omnipost.conf) if it isn't already, and run `sudo certbot --nginx -d post.avonixai.com`.
 
 Also run both SQL files from `app/supabase/migrations/` in Supabase → SQL Editor, in order.
+Then open `https://post.avonixai.com/api/v1/health`: `"ok":true` means the database and login work; anything
+else names what to fix. Claude and other MCP clients answer "Connector couldn't be added" until it is `true`.
 
 ## 2. A deploy key just for GitHub Actions (on the VPS)
 

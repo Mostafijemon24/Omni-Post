@@ -1,4 +1,4 @@
--- OmniPost AI: initial schema. Run once in Supabase → SQL Editor.
+-- OmniPost AI: initial schema. Run in Supabase → SQL Editor (safe to run again).
 -- The app talks to these tables only from the server with the service-role key, so Row Level
 -- Security is switched on with no policies: the public anon key can read or write nothing.
 
@@ -56,3 +56,9 @@ alter table public.posts         enable row level security;
 alter table public.oauth_clients enable row level security;
 alter table public.oauth_codes   enable row level security;
 alter table public.oauth_tokens  enable row level security;
+
+-- Supabase no longer exposes new public tables to the Data API automatically, not even to the
+-- service role: without these grants every call from the server fails with "permission denied".
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.posts, public.oauth_clients, public.oauth_codes, public.oauth_tokens to service_role;
+notify pgrst, 'reload schema';

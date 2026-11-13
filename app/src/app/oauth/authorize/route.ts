@@ -1,3 +1,4 @@
+import { dbHint } from "@/lib/server/db";
 import { configured } from "@/lib/server/env";
 import { esc, page } from "@/lib/server/html";
 import { issueCode, OAuthError, redirectWith, validateAuthRequest, type AuthRequest } from "@/lib/server/oauth";
@@ -18,6 +19,12 @@ ${error ? `<div class="err">${esc(error)}</div>` : ""}
 <div class="row"><button type="submit" name="decision" value="deny">Cancel</button><button class="primary" type="submit" name="decision" value="allow">Allow</button></div></form>`, error ? 401 : 200);
 }
 
+function failure(e: unknown) {
+  if (e instanceof OAuthError) return page("Error", `<h1>Can’t connect</h1><p>${esc(e.message)}</p>`, 400);
+  console.error("oauth/authorize", e);
+  return page("Error", `<h1>Can’t connect</h1><p>${esc(dbHint(e))}</p>`, 500);
+}
+
 const loggedIn = (r: Request) => verifySession(readCookie(r.headers.get("cookie"), SESSION_COOKIE));
 
 export async function GET(request: Request) {
@@ -26,7 +33,7 @@ export async function GET(request: Request) {
     const { req, clientName } = await validateAuthRequest(new URL(request.url).searchParams);
     return consent(req, clientName, await loggedIn(request));
   } catch (e) {
-    return page("Error", `<h1>Can’t connect</h1><p>${esc(e instanceof OAuthError ? e.message : "Unexpected error.")}</p>`, 400);
+    return failure(e);
   }
 }
 
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
   const form = await request.formData();
   let parsed;
   try { parsed = await validateAuthRequest(form); } catch (e) {
-    return page("Error", `<h1>Can’t connect</h1><p>${esc(e instanceof OAuthError ? e.message : "Unexpected error.")}</p>`, 400);
+    return failure(e);
   }
   const { req, clientName } = parsed;
   if (form.get("decision") !== "allow") return Response.redirect(redirectWith(req.redirect_uri, { error: "access_denied", state: req.state }), 302);
@@ -44,6 +51,9 @@ export async function POST(request: Request) {
     await new Promise((r) => setTimeout(r, 600)); // slow down guessing
     return consent(req, clientName, false, "Wrong password.");
   }
-  const code = await issueCode(req);
+  let code;
+  try { code = await issueCode(req); } catch (e) {
+    return failure(e);
+  }
   return Response.redirect(redirectWith(req.redirect_uri, { code, state: req.state }), 302);
 }

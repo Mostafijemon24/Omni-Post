@@ -116,6 +116,14 @@ export function Shell({ v, route, children }: { v: ViewModel; route: string; chi
             <span className="om-create-label">Create</span>
           </button>
         </header>
+        {v.backendIssue ? (
+          <div role="alert" style={css("flex:0 0 auto; display:flex; gap:9px; align-items:flex-start; padding:10px 24px; background:var(--red-soft); color:var(--red); border-bottom:1px solid var(--border); font-size:12.5px; line-height:1.45;")}>
+            <i className="ph-bold ph-warning" style={css("font-size:15px; margin-top:1px;")} />
+            <span>
+              <b>Database problem — posts are not being saved and MCP connectors cannot sign in.</b> {v.backendIssue}
+            </span>
+          </div>
+        ) : null}
         <main className="om-scroll om-main" style={css("flex:1; overflow-y:auto; padding:26px; background:var(--bg);")}>
           {children}
         </main>

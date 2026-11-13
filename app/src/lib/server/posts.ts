@@ -88,3 +88,8 @@ export async function updatePost(id: string, patch: z.input<typeof PostUpdate>):
   if (!rows.length) throw new PostError(`No post with id ${id}.`);
   return rows[0] as unknown as Post;
 }
+
+export async function deletePost(id: string): Promise<void> {
+  z.string().uuid().parse(id);
+  await getDb().remove("posts", { id });
+}
